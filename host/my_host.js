@@ -40,11 +40,11 @@ function getFilesizeInBytes(filename) {
 function messageHandler(msg, push, done) {
     switch (msg.type) {
         case 'download':
-            var bootLoaderPath = './new_uploader/upload.py';
+            var bootLoaderPath = './new_uploader/da.bin';
             if (process.platform === 'win32') {
                 build = child.exec('./build.sh', {cwd: '/Users/blue-mtk/mtk/test_ml'});
             } else {
-                build = child.exec('python ' + bootLoaderPath + ' -c ' + msg.serialPortsValue + ' -f ' + msg.filePath + ' -t cm4');
+                build = child.exec('python ./new_uploader/upload.py -c ' + msg.serialPortsValue + ' -f ' + msg.filePath + ' -t cm4');
             }
 
             var binFileSize = getFilesizeInBytes(msg.filePath);
@@ -56,7 +56,7 @@ function messageHandler(msg, push, done) {
 
             build.stderr.on('data', function(data) {
                 if (/^progess/.test(data)) {
-                    var value = Number(data.replace('progress:', ''));
+                    var value = Number(data.replace(/[^0-9]/g, ''));
                     var total = fileSize / 128;
                     push({ progress: (value / total) * 100 });
                 } else {

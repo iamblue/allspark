@@ -101,19 +101,21 @@ export default class App extends React.Component {
 
   onDownloadFW() {
     Log.clear();
+
     global.port.postMessage({
       type: 'download',
-      filePath: '',
+      filePath: this.state.filePathValue,
       serialPortsValue: this.state.serialPortsValue,
     });
   }
 
   onScreenLog() {
     Log.clear();
+    let _this = this;
     if (!global.serialPortConectionId) {
       var SerialPort = require("browser-serialport").SerialPort
-      var serialPort = new SerialPort("/dev/tty.usbmodem1412", {
-        baudrate: 115200
+      var serialPort = new SerialPort(_this.state.serialPortsValue, {
+        baudrate: Number(_this.state.baudrateValue),
       });
       serialPort.on("open", function () {
         console.log('open');
@@ -193,7 +195,7 @@ export default class App extends React.Component {
           </Button>
         </div>
         <div>
-          <Progressbar now={30} />
+          <Progressbar now={this.state.progress} />
         </div>
         <div>
           <CodeBlock

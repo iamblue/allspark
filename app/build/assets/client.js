@@ -23839,12 +23839,19 @@
 	    });
 	  },
 	  receive: function receive(msg) {
-	    console.log(msg.log);
+	    // console.log(msg);
 	    if (msg.log === 'exit') {
 	      _dispatcherAppDispatcherJs2['default'].dispatch({
 	        log: global.log
 	      });
 	      global.log = '';
+	    } else if (msg.progress) {
+	      if (msg.progress > 100) {
+	        msg.progress = 100;
+	      }
+	      return _dispatcherAppDispatcherJs2['default'].dispatch({
+	        progress: msg.progress
+	      });
 	    } else {
 	      global.log += msg.log;
 	      return _dispatcherAppDispatcherJs2['default'].dispatch({
@@ -38268,9 +38275,10 @@
 	    key: 'onDownloadFW',
 	    value: function onDownloadFW() {
 	      _libLogJs2['default'].clear();
+
 	      global.port.postMessage({
 	        type: 'download',
-	        filePath: '',
+	        filePath: this.state.filePathValue,
 	        serialPortsValue: this.state.serialPortsValue
 	      });
 	    }
@@ -38278,10 +38286,11 @@
 	    key: 'onScreenLog',
 	    value: function onScreenLog() {
 	      _libLogJs2['default'].clear();
+	      var _this = this;
 	      if (!global.serialPortConectionId) {
 	        var SerialPort = __webpack_require__(389).SerialPort;
-	        var serialPort = new SerialPort("/dev/tty.usbmodem1412", {
-	          baudrate: 115200
+	        var serialPort = new SerialPort(_this.state.serialPortsValue, {
+	          baudrate: Number(_this.state.baudrateValue)
 	        });
 	        serialPort.on("open", function () {
 	          console.log('open');
@@ -38378,7 +38387,7 @@
 	        _react2['default'].createElement(
 	          'div',
 	          null,
-	          _react2['default'].createElement(_mtkUiLibProgressbar2['default'], { now: 30 })
+	          _react2['default'].createElement(_mtkUiLibProgressbar2['default'], { now: this.state.progress })
 	        ),
 	        _react2['default'].createElement(
 	          'div',
@@ -38429,7 +38438,8 @@
 	var _keymirror2 = _interopRequireDefault(_keymirror);
 
 	module.exports = (0, _keymirror2['default'])({
-	  LOG: null
+	  LOG: null,
+	  PROGRESS: null
 	});
 
 /***/ },
@@ -38537,8 +38547,13 @@
 	});
 
 	_dispatcherAppDispatcher2['default'].register(function (action) {
+	  console.log(action);
 	  if (action.log) {
 	    APP_PAGE.log = action.log;
+	    appStore.emitChange();
+	  } else if (action.progress) {
+	    console.log(1);
+	    APP_PAGE.progress = action.progress;
 	    appStore.emitChange();
 	  }
 	});

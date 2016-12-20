@@ -22,12 +22,16 @@ module.exports = {
     });
   },
   receive: function(msg) {
+    // console.log(msg);
     if (msg.log === 'exit') {
       AppDispatcher.dispatch({
         log: global.log,
       });
       global.log = '';
     } else if (msg.progress) {
+      if (msg.progress > 100) {
+        msg.progress = 100;
+      }
       return AppDispatcher.dispatch({
         progress: msg.progress,
       });
