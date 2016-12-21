@@ -38221,8 +38221,7 @@
 	function appState() {
 	  return _storesAppStoreJs2['default'].init();
 	}global.application = 'com.my_company.my_application';
-	global.serialPortConectionId = null;
-
+	global.serialPort = null;
 	/* init connect */
 	_libPortJs2['default'].connect();
 
@@ -38248,7 +38247,6 @@
 	    this.state = {
 	      serialPortsValue: '',
 	      serialPorts: [],
-	      watchingSerialPort: false,
 	      baudrateValue: '115200',
 	      filePathValue: './new_uploader/sample.bin'
 	    };
@@ -38297,8 +38295,8 @@
 	    value: function onDownloadFW() {
 	      _libLogJs2['default'].clear();
 
-	      if (this.state.serialPort) {
-	        this.state.serialPort.close();
+	      if (global.serialPort) {
+	        global.serialPort.close();
 	      }
 
 	      global.port.postMessage({
@@ -38312,35 +38310,29 @@
 	    value: function onScreenLog() {
 	      _libLogJs2['default'].clear();
 
-	      if (this.state.serialPort) {
-	        this.state.serialPort.close();
+	      if (global.serialPort) {
+	        global.serialPort.close();
 	      }
 
 	      var _this = this;
-	      if (!global.serialPortConectionId) {
-	        (function () {
-	          var serialPort = new SerialPort(_this.state.serialPortsValue, {
-	            baudrate: Number(_this.state.baudrateValue)
-	          });
-	          serialPort.on("open", function () {
-	            console.log('open');
 
-	            _this.setState({
-	              serialPort: serialPort
-	            });
+	      console.log(_this.state);
+	      var serialPort = new SerialPort(_this.state.serialPortsValue, {
+	        baudrate: Number(_this.state.baudrateValue)
+	      });
 
-	            serialPort.on('data', function (data) {
-	              _libLogJs2['default'].parseSerialPorts(data);
-	            });
+	      serialPort.on('open', function () {
+	        console.log('open');
+	        global.serialPort = serialPort;
 
-	            serialPort.on('close', function () {
-	              _this.setState({
-	                serialPort: null
-	              });
-	            });
-	          });
-	        })();
-	      }
+	        serialPort.on('data', function (data) {
+	          _libLogJs2['default'].parseSerialPorts(data);
+	        });
+
+	        serialPort.on('close', function () {
+	          global.serialPort = null;
+	        });
+	      });
 	    }
 	  }, {
 	    key: '_onChange',

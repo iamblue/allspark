@@ -30,8 +30,7 @@ import Log from './lib/log.js';
 
 /* application setting */
 global.application = 'com.my_company.my_application';
-global.serialPortConectionId = null;
-
+global.serialPort = null;
 /* init connect */
 Port.connect();
 
@@ -103,8 +102,8 @@ export default class App extends React.Component {
   onDownloadFW() {
     Log.clear();
 
-    if (this.state.serialPort) {
-      this.state.serialPort.close();
+    if (global.serialPort) {
+      global.serialPort.close();
     }
 
     global.port.postMessage({
@@ -117,35 +116,30 @@ export default class App extends React.Component {
   onScreenLog() {
     Log.clear();
 
-    if (this.state.serialPort) {
-      this.state.serialPort.close();
+    if (global.serialPort) {
+      global.serialPort.close();
     }
 
     let _this = this;
-    if (!global.serialPortConectionId) {
-      let serialPort = new SerialPort(_this.state.serialPortsValue, {
-        baudrate: Number(_this.state.baudrateValue),
+
+    console.log(_this.state);
+    let serialPort = new SerialPort(_this.state.serialPortsValue, {
+      baudrate: Number(_this.state.baudrateValue),
+    });
+
+    serialPort.on('open', function () {
+      console.log('open');
+      global.serialPort = serialPort;
+
+      serialPort.on('data', function(data) {
+        Log.parseSerialPorts(data);
       });
 
-      serialPort.on("open", function () {
-        console.log('open');
-
-        _this.setState({
-          serialPort: serialPort,
-        });
-
-        serialPort.on('data', function(data) {
-          Log.parseSerialPorts(data);
-        });
-
-        serialPort.on('close', function() {
-          _this.setState({
-            serialPort: null,
-          });
-        });
-
+      serialPort.on('close', function() {
+        global.serialPort = null;
       });
-    }
+
+    });
   }
 
   _onChange() {
