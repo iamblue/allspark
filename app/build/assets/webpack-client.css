@@ -64,6 +64,18 @@ code {
       -ms-flex-pack: justify;
           justify-content: space-between;
 }
+.main__configBtnContent___349Go {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+}
+.main__configBtnIcon___3PsRP {
+  font-size: 30px;
+  margin-right: 10px;
+}
 
 .main__configContent___1hJe2 {
   display: -webkit-box;

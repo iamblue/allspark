@@ -35,8 +35,12 @@ const appStore = assign({}, EventEmitter.prototype, {
 });
 
 AppDispatcher.register((action) => {
+  console.log(action)
   if (action.log) {
     APP_PAGE.log = action.log;
+    appStore.emitChange();
+  } else if (action.connected) {
+    APP_PAGE.connected = action.connected;
     appStore.emitChange();
   } else if (action.progress) {
     APP_PAGE.progress = action.progress;

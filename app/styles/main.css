@@ -51,6 +51,14 @@ code {
   margin-top: 20px;
   justify-content: space-between;
 }
+.configBtnContent {
+  display: flex;
+  justify-content: space-between;
+}
+.configBtnIcon {
+  font-size: 30px;
+  margin-right: 10px;
+}
 
 .configContent {
   display: flex;

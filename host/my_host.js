@@ -43,43 +43,51 @@ function messageHandler(msg, push, done) {
         case 'download':
             //var filePath = 'C:\\msys64\\home\\allspark\\host\\new_uploader\\sample.bin';
             var filePath = msg.filePath;
-            var bootLoaderPath;
 
-            if (process.platform === 'win32') {
-                bootLoaderPath = __dirname + '\\new_uploader\\da.bin';
-                build = child.exec('upload.exe -c ' + msg.serialPortsValue + ' -f ' + filePath + ' -t cm4', { cwd: __dirname + '\\new_uploader' });
-            } else {
-                bootLoaderPath = './new_uploader/da.bin';
-                build = child.exec('python ./new_uploader/upload.py -c ' + msg.serialPortsValue + ' -f ' + msg.filePath + ' -t cm4');
-            }
+            path.exists(filePath, function(exists) {
+                if (exists) {
+                    var bootLoaderPath;
 
-            var binFileSize = getFilesizeInBytes(filePath);
-            var bootLoaderFileSize = getFilesizeInBytes(bootLoaderPath);
-            var fileSize;
-            
-            build.stdout.on('data', function(data) {
-                push({ log: data });
-            });
-
-            build.stderr.on('data', function(data) {
-                if (/^progess/.test(data)) {
-                    var value = Number(data.replace(/[^0-9]/g, ''));
-                    var total = fileSize / 128;
-                    push({ progress: (value / total) * 100 });
-                } else {
-                    if (/^Start uploading the download agent/.test(data)) {
-                        fileSize = bootLoaderFileSize;
-                    } else if (/^DA uploaded, start uploading the user bin/.test(data)) {
-                        fileSize = binFileSize;
+                    if (process.platform === 'win32') {
+                        bootLoaderPath = __dirname + '\\new_uploader\\da.bin';
+                        build = child.exec('upload.exe -c ' + msg.serialPortsValue + ' -f ' + filePath + ' -t cm4', { cwd: __dirname + '\\new_uploader' });
+                    } else {
+                        bootLoaderPath = './new_uploader/da.bin';
+                        build = child.exec('python ./new_uploader/upload.py -c ' + msg.serialPortsValue + ' -f ' + filePath + ' -t cm4');
                     }
-                    push({ log: data });
-                }
-            });
 
-            build.on('exit', function() {
-                push({ log: 'exit' });
-                done();
-            });
+                    var binFileSize = getFilesizeInBytes(filePath);
+                    var bootLoaderFileSize = getFilesizeInBytes(bootLoaderPath);
+                    var fileSize;
+
+                    build.stdout.on('data', function(data) {
+                        push({ log: data });
+                    });
+
+                    build.stderr.on('data', function(data) {
+                        if (/^progess/.test(data)) {
+                            var value = Number(data.replace(/[^0-9]/g, ''));
+                            var total = fileSize / 128;
+                            push({ progress: (value / total) * 100 });
+                        } else {
+                            if (/^Start uploading the download agent/.test(data)) {
+                                fileSize = bootLoaderFileSize;
+                            } else if (/^DA uploaded, start uploading the user bin/.test(data)) {
+                                fileSize = binFileSize;
+                            }
+                            push({ log: data });
+                        }
+                    });
+
+                    build.on('exit', function() {
+                        push({ log: 'exit' });
+                        done();
+                    });
+                } else {
+                    push({log: 'File is not exists!'});
+                    done();
+                }
+            })
             break;
         default:
             break;

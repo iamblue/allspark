@@ -8,6 +8,8 @@ var SerialPort = require("browser-serialport").SerialPort;
 
 /* flux */
 import AppStore from './stores/appStore.js';
+import AppDispatcher from './dispatcher/appDispatcher.js';
+
 function appState() {
   return AppStore.init();
 }
@@ -34,6 +36,8 @@ import {
   MiSetting,
   MiDiagnosis,
   MiFotaPuch,
+  MiSyncAlert,
+  MiStatusWait,
   MiCircleLoadingAnimation,
 } from 'mtk-icon';
 
@@ -48,7 +52,6 @@ global.serialPort = null;
 
 import Package from '../../package.json';
 /* init connect */
-Port.connect();
 
 const baudrates = [
   {
@@ -72,6 +75,7 @@ export default class App extends React.Component {
 
     this.state = {
       settingDialogShow: false,
+      connectWithComputerDialogShow: false,
       serialPortsValue: '',
       serialPorts: [],
       baudrateValue: '115200',
@@ -85,6 +89,8 @@ export default class App extends React.Component {
     this.openSettingDialog = this.openSettingDialog.bind(this);
     this.closeSettingDialog = this.closeSettingDialog.bind(this);
     this.onClearLog = this.onClearLog.bind(this);
+    this.openConnectWithComputerDialog = this.openConnectWithComputerDialog.bind(this);
+    this.closeConnectWithComputerDialog = this.closeConnectWithComputerDialog.bind(this);
   }
 
   getInitialState() {
@@ -102,9 +108,10 @@ export default class App extends React.Component {
     chrome.storage.sync.get('filePathValue', function(result){
       _this.setState({filePathValue: result.filePathValue});
     });
-
+    Port.connect();
     this.onRefreshSerialPort();
     AppStore.addChangeListener(this._onChange);
+
   }
 
   componentWillUnmount() {
@@ -131,15 +138,27 @@ export default class App extends React.Component {
 
   onDownloadFW() {
     Log.clear();
-
     if (global.serialPort) {
       global.serialPort.close();
     }
-    global.port.postMessage({
-      type: 'download',
-      filePath: this.state.filePathValue,
-      serialPortsValue: this.state.serialPortsValue,
-    });
+
+    try {
+      Port.connect();
+      global.port.postMessage({
+        type: 'download',
+        filePath: this.state.filePathValue,
+        serialPortsValue: this.state.serialPortsValue,
+      });
+    } catch (e) {
+      console.log(e);
+      AppDispatcher.dispatch({
+        log: this.state.log + '\n Cannot connect to your computer!',
+      });
+      Port.connect();
+      return this.setState({
+        connectWithComputerDialogShow: true,
+      });
+    }
   }
 
   onScreenLog() {
@@ -178,6 +197,14 @@ export default class App extends React.Component {
     this.setState({ settingDialogShow: false });
   }
 
+  openConnectWithComputerDialog() {
+    this.setState({ connectWithComputerDialogShow: true });
+  }
+
+  closeConnectWithComputerDialog() {
+    this.setState({ connectWithComputerDialogShow: false });
+  }
+
   onClearLog() {
     Log.clear();
   }
@@ -187,6 +214,39 @@ export default class App extends React.Component {
   }
 
   render() {
+    let connectWithComputerDialog = (
+      <Dialog
+        show={this.state.connectWithComputerDialogShow}
+        size="large"
+        styles={{ zIndex: 999 }}
+        onHide={this.closeConnectWithComputerDialog}
+      >
+        <DialogHeader>
+          <div><MiSyncAlert style={{ marginRight: 5 }} />Connect with your computer</div>
+        </DialogHeader>
+        <DialogBody>
+          <p>若出現此圖示，及代表此 chrome app 尚未與您的電腦做連接</p>
+          <span>Windows</span>
+          <ul>
+            <li>下載:</li>
+            <li>解壓縮檔案後，放置桌面</li>
+            <li>進去此資料夾，並點擊 register.bat</li>
+          </ul>
+          <span>Mac/Linux</span>
+          <ul>
+            <li>下載:</li>
+            <li>解壓縮，放置桌面</li>
+            <li>打開 Terminal.app , 進去這個資料夾</li>
+            <li>在 Terminal 輸入 ./register.sh </li>
+          </ul>
+        </DialogBody>
+        <DialogFooter>
+          <Button onClick={this.closeConnectWithComputerDialog} kind="primary">
+            OK
+          </Button>
+        </DialogFooter>
+      </Dialog>
+    );
     let settingDialog = (
       <Dialog
         show={this.state.settingDialogShow}
@@ -248,17 +308,26 @@ export default class App extends React.Component {
     return (
       <div style={{ width: 954, margin: '0 auto', padding: '20px 0' }}>
         {settingDialog}
+        {connectWithComputerDialog}
         <h1> Allspark </h1>
         <div className={main.config}>
           <div className={main.configContent}>
             <span>serialPort: {this.state.serialPortsValue}</span>
             <span>baudrate: {this.state.baudrateValue}</span>
           </div>
+          <div className={main.configBtnContent}>
+          {
+              this.state.connected ?
+                <MiStatusWait className={main.configBtnIcon} style={{color: '#0080B4'}}/>
+              :
+                <MiSyncAlert onClick={this.openConnectWithComputerDialog} className={main.configBtnIcon} style={{color: 'red'}}/>
+          }
           <InputGroup>
             <Button onClick={this.onDownloadFW}><MiFotaPuch style={{ marginRight: 5 }} /> Download</Button>
             <Button onClick={this.onScreenLog}><MiDiagnosis style={{ marginRight: 5 }} /> Console</Button>
             <Button onClick={this.openSettingDialog} kind="cancel"><MiSetting style={{ marginRight: 5 }} />Setting</Button>
           </InputGroup>
+          </div>
         </div>
         <div>
           <CodeBlock
