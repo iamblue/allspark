@@ -23,6 +23,9 @@
   font-family:RionaSans-Light,Arial,Helvetica,sans-serif;
 }
 
+body {
+  background: #f1f2f7;
+}
 code {
   font-size: 11px !important;
   line-height: 18px;
@@ -33,4 +36,28 @@ code {
   height: 33px;
   display: flex;
   flex-direction: row;
+}
+
+.config {
+  border-bottom: 1px solid #d1d2d3;
+  padding-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.clearConfig {
+  display: flex;
+  margin-top: 20px;
+  justify-content: space-between;
+}
+
+.configContent {
+  display: flex;
+  align-items: flex-end;
+}
+
+.configContent span{
+  height: 12px;
+  margin-right: 16px;
 }

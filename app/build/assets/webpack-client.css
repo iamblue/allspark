@@ -23,6 +23,9 @@
   font-family:RionaSans-Light,Arial,Helvetica,sans-serif;
 }
 
+body {
+  background: #f1f2f7;
+}
 code {
   font-size: 11px !important;
   line-height: 18px;
@@ -38,6 +41,147 @@ code {
   -webkit-box-direction: normal;
       -ms-flex-direction: row;
           flex-direction: row;
+}
+
+.main__config___22gv1 {
+  border-bottom: 1px solid #d1d2d3;
+  padding-bottom: 5px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.main__clearConfig___3QfRq {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  margin-top: 20px;
+  -webkit-box-pack: justify;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+}
+
+.main__configContent___1hJe2 {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: end;
+      -ms-flex-align: end;
+          align-items: flex-end;
+}
+
+.main__configContent___1hJe2 span{
+  height: 12px;
+  margin-right: 16px;
+}.fontColor__default___3EOsa {
+  color: initial;
+}
+
+.fontColor__primary___19jgt {
+  color: #00A1DE;
+}
+
+.fontColor__error___2qNg_ {
+  color: #F5364E;
+}
+
+.fontColor__success___2soJW {
+  color: #69BE28;
+}
+.Label__default___39hEk {
+  font-size: inherit;
+}
+
+.Label__error___3U0J5 {
+}
+
+.Label__success___3lj25 {
+}
+
+/* ============================
+ * required
+ * ============================
+ */
+
+.Label__required___irz2p::after {
+  content: "\A0*\A0";
+  color: #F5364E;
+}
+/* ============================
+ * formWrap
+ * ============================
+ */
+
+.InputForm__formWrapBase___21n1k {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+
+.InputForm__formWraphorizontal___34nLj {
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: row;
+          flex-direction: row;
+}
+
+.InputForm__formWrapvertical___1LpwX {
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+      -ms-flex-direction: column;
+          flex-direction: column;
+}
+
+.InputForm__formWrapBase___21n1k:not(:last-child) {
+  margin-bottom: 10px;
+}
+
+/* ============================
+ * label
+ * ============================
+ */
+
+.InputForm__formWraphorizontal___34nLj .InputForm__label___aGmj7 {
+  height: 32px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -ms-flex-preferred-size: 35%;
+      flex-basis: 35%;
+  min-width: 150px;
+  padding-right: 10px;
+  box-sizing: border-box;
+}
+
+.InputForm__formWraphorizontal___34nLj .InputForm__lableContent___20Irh {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.InputForm__formWrapvertical___1LpwX .InputForm__label___aGmj7 {
+  margin-bottom: 5px;
+}
+
+/* ============================
+ * input
+ * ============================
+ */
+
+.InputForm__formWraphorizontal___34nLj .InputForm__input___36Xpg {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
 }
 .SlideDown__slide___1b1ba {
   -webkit-transform: translate3d(0, -6px, 0);
@@ -305,40 +449,6 @@ code {
       -ms-flex-align: center;
           align-items: center;
 }
-.fontColor__default___3EOsa {
-  color: initial;
-}
-
-.fontColor__primary___19jgt {
-  color: #00A1DE;
-}
-
-.fontColor__error___2qNg_ {
-  color: #F5364E;
-}
-
-.fontColor__success___2soJW {
-  color: #69BE28;
-}
-.Label__default___39hEk {
-  font-size: inherit;
-}
-
-.Label__error___3U0J5 {
-}
-
-.Label__success___3lj25 {
-}
-
-/* ============================
- * required
- * ============================
- */
-
-.Label__required___irz2p::after {
-  content: "\A0*\A0";
-  color: #F5364E;
-}
 .FormMessage__default___1RfpW {
   font-size: 12px;
   padding-top: 5px;
@@ -546,6 +656,52 @@ code {
   width: 100%;
   z-index: 6;
 }
+.InputRadio__wrap___1TD7- {
+  display: -webkit-inline-box;
+  display: -ms-inline-flexbox;
+  display: inline-flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  height: 14px;
+  cursor: pointer;
+}
+
+.InputRadio__checkbox___1Ycbf {
+  height: 100%;
+  margin-right: 5px;
+}
+
+.InputRadio__input___oIc7B {
+  display: none;
+}
+
+.InputRadio__box___1pd8G {
+  fill: #00A1DE;
+  stroke: #D1D2D3;
+  stroke-width: 1px;
+  -webkit-transition: stroke 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: stroke 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.InputRadio__input___oIc7B:checked + svg > .InputRadio__box___1pd8G {
+  stroke: #067CB0;
+}
+
+.InputRadio__check___2AcUx {
+  fill: #FFFFFF;
+  -webkit-transform-origin: 50% 50%;
+          transform-origin: 50% 50%;
+  -webkit-transition: -webkit-transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: -webkit-transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 0.45s cubic-bezier(0.23, 1, 0.32, 1), -webkit-transform 0.45s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.InputRadio__input___oIc7B:checked + svg > .InputRadio__check___2AcUx {
+  -webkit-transform: scale(0.5);
+          transform: scale(0.5);
+}
 .LoadingMorph__default___3Sp3I {
   display: -webkit-inline-box;
   display: -ms-inline-flexbox;
@@ -709,4 +865,118 @@ code {
 
 .Progressbar__progress100___cXvmX {
   background-color: #69BE28;
+}
+@-webkit-keyframes Dialog__fadein___3BHXw {
+  0% { opacity: 0; }
+  100% { opacity: 0.3; }
+}
+
+@keyframes Dialog__fadein___3BHXw {
+  0% { opacity: 0; }
+  100% { opacity: 0.3; }
+}
+
+.Dialog__backdrop___1WMxV {
+  position: fixed;
+  z-index: auto;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #000000;
+  opacity: 0.3;
+  -webkit-animation: Dialog__fadein___3BHXw 0.5s linear;
+          animation: Dialog__fadein___3BHXw 0.5s linear;
+}
+
+.Dialog__wrap___1PjPX {
+  position: fixed;
+  right: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  outline: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.Dialog__content___1YT4i {
+  position: relative; /* 不加這個在反白選取文字會怪怪的 */
+  right: 0;
+  left: 0;
+  margin-left: auto;
+  margin-right: auto;
+  border: 1px solid #E0E0E0;
+  border-radius: 3px;
+  background-color: white;
+}
+
+.Dialog__center___B7i4O {
+  position: fixed;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+          transform: translateY(-50%);
+}
+
+.Dialog__top___1STR- {
+  top: 0;
+  margin-bottom: 10px;
+}
+
+.Dialog__large___LrxEz {
+  width: 618px;
+}
+
+.Dialog__small___3lS6D {
+  width: 446px;
+}
+.DialogHeader__base___uk9vI {
+  padding-left: 20px;
+  font-size: 13px;
+}
+.PanelHeader__base___1gOnr {
+  height: 50px;
+  background: #FAFAFA;
+  border-bottom: 1px solid #F1F2F7;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+.PanelBody__base___1dHhs {
+  background: #FFFFFF;
+  padding: 20px;
+  border-bottom-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+/* ============================
+ * Kind
+ * ============================
+ */
+
+.DialogBody__text___yvWSW {
+  padding: 20px;
+}
+
+.DialogBody__form___3pf9J {
+  padding: 20px 70px;
+}
+.DialogFooter__base___X8GNs {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.DialogFooter__base___X8GNs > button:not(:last-child) {
+  margin-right: 10px;
 }

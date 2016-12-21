@@ -11,6 +11,7 @@ module.exports = {
         global.port.onDisconnect.addListener(function(e) {
             console.log('unexpected disconnect');
             global.port = null;
+            global.port = chrome.runtime.connectNative(global.application);
         });
     },
     disconnect: function() {

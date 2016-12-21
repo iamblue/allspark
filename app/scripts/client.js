@@ -13,15 +13,29 @@ function appState() {
 }
 
 /* mtk-ui */
+import InputForm from 'mtk-ui/lib/InputForm';
 import InputSelect from 'mtk-ui/lib/InputSelect';
 import InputText from 'mtk-ui/lib/InputText';
+import InputRadio from 'mtk-ui/lib/InputRadio';
 import Button from 'mtk-ui/lib/Button';
 import CodeBlock from 'mtk-ui/lib/CodeBlock';
+import Hr from 'mtk-ui/lib/CodeBlock';
 import Progressbar from 'mtk-ui/lib/Progressbar';
-
+import InputGroup from 'mtk-ui/lib/InputGroup';
+import Dialog from 'mtk-ui/lib/Dialog';
+import DialogHeader from 'mtk-ui/lib/DialogHeader';
+import DialogBody from 'mtk-ui/lib/DialogBody';
+import DialogFooter from 'mtk-ui/lib/DialogFooter';
+import Select from 'mtk-ui/lib/Select';
 
 /* mtk-icon */
-import { MiFlip } from 'mtk-icon';
+import {
+  MiFlip,
+  MiSetting,
+  MiDiagnosis,
+  MiFotaPuch,
+  MiCircleLoadingAnimation,
+} from 'mtk-icon';
 
 /* chrome lib */
 import Port from './lib/port.js';
@@ -31,6 +45,8 @@ import Log from './lib/log.js';
 /* application setting */
 global.application = 'com.my_company.my_application';
 global.serialPort = null;
+
+import Package from '../../package.json';
 /* init connect */
 Port.connect();
 
@@ -55,6 +71,7 @@ export default class App extends React.Component {
     super(props, context);
 
     this.state = {
+      settingDialogShow: false,
       serialPortsValue: '',
       serialPorts: [],
       baudrateValue: '115200',
@@ -65,6 +82,9 @@ export default class App extends React.Component {
     this.onDownloadFW = this.onDownloadFW.bind(this);
     this.onScreenLog = this.onScreenLog.bind(this);
     this.onRefreshSerialPort = this.onRefreshSerialPort.bind(this);
+    this.openSettingDialog = this.openSettingDialog.bind(this);
+    this.closeSettingDialog = this.closeSettingDialog.bind(this);
+    this.onClearLog = this.onClearLog.bind(this);
   }
 
   getInitialState() {
@@ -72,6 +92,17 @@ export default class App extends React.Component {
   }
 
   componentDidMount() {
+    const _this = this;
+    chrome.storage.sync.get('baudrateValue', function(result){
+      _this.setState({ baudrateValue: result.baudrateValue });
+    });
+    chrome.storage.sync.get('serialPortsValue', function(result){
+      _this.setState({serialPortsValue: result.serialPortsValue});
+    });
+    chrome.storage.sync.get('filePathValue', function(result){
+      _this.setState({filePathValue: result.filePathValue});
+    });
+
     this.onRefreshSerialPort();
     AppStore.addChangeListener(this._onChange);
   }
@@ -89,7 +120,6 @@ export default class App extends React.Component {
         port.value = port.path;
         port.children = port.path;
       });
-      console.log(ports);
       return _this.setState({
         serialPorts: ports,
       });
@@ -105,7 +135,6 @@ export default class App extends React.Component {
     if (global.serialPort) {
       global.serialPort.close();
     }
-
     global.port.postMessage({
       type: 'download',
       filePath: this.state.filePathValue,
@@ -120,9 +149,8 @@ export default class App extends React.Component {
       global.serialPort.close();
     }
 
-    let _this = this;
+    const _this = this;
 
-    console.log(_this.state);
     let serialPort = new SerialPort(_this.state.serialPortsValue, {
       baudrate: Number(_this.state.baudrateValue),
     });
@@ -142,69 +170,102 @@ export default class App extends React.Component {
     });
   }
 
+  openSettingDialog() {
+    this.setState({ settingDialogShow: true });
+  }
+
+  closeSettingDialog() {
+    this.setState({ settingDialogShow: false });
+  }
+
+  onClearLog() {
+    Log.clear();
+  }
+
   _onChange() {
     this.setState(appState());
   }
 
   render() {
+    let settingDialog = (
+      <Dialog
+        show={this.state.settingDialogShow}
+        size="large"
+        styles={{ zIndex: 999 }}
+        onHide={this.closeSettingDialog}
+      >
+        <DialogHeader>
+          <div><MiSetting style={{ marginRight: 5 }} />Setting</div>
+        </DialogHeader>
+        <DialogBody>
+          <InputForm>
+            <Select
+              label="Baudrate"
+              selectedValue={this.state.baudrateValue}
+              onChange={(e, value) => {
+                chrome.storage.sync.set({ 'baudrateValue': e.target.value });
+                this.setState({ baudrateValue: e.target.value });
+              }}>
+              <InputRadio value="115200" label="115200" style={{ marginRight: 20 }}/>
+              <InputRadio value="57600" label="57600" style={{ marginRight: 20 }}/>
+              <InputRadio value="9600" label="9600" style={{ marginRight: 20 }} />
+            </Select>
+            <InputText
+              label="Path"
+              defaultValue={this.state.filePathValue}
+              placeholder="Input your file path."
+              onChange={(e, value) => {
+                chrome.storage.sync.set({ 'filePathValue': e.target.value });
+                this.setState({ filePathValue: e.target.value });
+              }}
+            />
+            <InputSelect
+              label="Serial port"
+              style={{ width: 375 }}
+              items={this.state.serialPorts}
+              value={this.state.serialPortsValue}
+              placeholder="Choose a port!"
+              filterFunc={() => true}
+              onChange={(e, value) => {
+                chrome.storage.sync.set({ 'serialPortsValue': value });
+                this.setState({ serialPortsValue: value });
+              }}
+            />
+          </InputForm>
+        </DialogBody>
+        <DialogFooter>
+            <Button
+              onClick={this.onRefreshSerialPort}
+            >
+              <MiFlip size="1.5em" style={{marginRight: 5}}/>Serial port
+            </Button>
+          <Button onClick={this.closeSettingDialog} kind="primary">
+            OK
+          </Button>
+        </DialogFooter>
+      </Dialog>
+    );
     return (
-      <div>
-        <div className={main.menuBar}>
-        baudrate:
-        <InputSelect
-          style={{ width: 200 }}
-          items={baudrates}
-          value={this.state.baudrateValue}
-          placeholder="Choose a baudrate!"
-          onChange={(e, value) => {
-            this.setState({ baudrateValue: value });
-          }}
-        />
-        path:
-        <InputText
-          value={this.state.filePathValue}
-          placeholder="Input your file path."
-          onChange={(e, value) => {
-            this.setState({ filePathValue: value });
-          }}
-        />
-        </div>
-        <div className={main.menuBar}>
-          <InputSelect
-            style={{ width: 435 }}
-            items={this.state.serialPorts}
-            value={this.state.serialPortsValue}
-            placeholder="Choose a port!"
-            onChange={(e, value) => {
-              this.setState({ serialPortsValue: value });
-            }}
-          />
-          <Button
-            square
-            onClick={this.onRefreshSerialPort}
-          >
-            <MiFlip size="1.5em" />
-          </Button>
-          <Button
-            onClick={this.onDownloadFW}
-          >
-          Download
-          </Button>
-          <Button
-            onClick={this.onScreenLog}
-          >
-          log
-          </Button>
-        </div>
-        <div>
-          <Progressbar now={this.state.progress} />
+      <div style={{ width: 954, margin: '0 auto', padding: '20px 0' }}>
+        {settingDialog}
+        <h1> Allspark </h1>
+        <div className={main.config}>
+          <div className={main.configContent}>
+            <span>serialPort: {this.state.serialPortsValue}</span>
+            <span>baudrate: {this.state.baudrateValue}</span>
+          </div>
+          <InputGroup>
+            <Button onClick={this.onDownloadFW}><MiFotaPuch style={{ marginRight: 5 }} /> Download</Button>
+            <Button onClick={this.onScreenLog}><MiDiagnosis style={{ marginRight: 5 }} /> Console</Button>
+            <Button onClick={this.openSettingDialog} kind="cancel"><MiSetting style={{ marginRight: 5 }} />Setting</Button>
+          </InputGroup>
         </div>
         <div>
           <CodeBlock
             style={{
-              maxHeight: 446,
-              height: 446,
-              width: 640,
+              maxHeight: 510,
+              height: 510,
+              width: '100%',
               borderRadius: 3,
               background: '#FFFFFF',
             }}
@@ -217,6 +278,18 @@ export default class App extends React.Component {
             }}
             copy={false}
           />
+        </div>
+        <div>
+          <Progressbar now={this.state.progress} style={{ height: 5 }}/>
+        </div>
+        <div className={main.clearConfig}>
+          <div>
+            version: {Package.version}
+          </div>
+          <InputGroup>
+            <Button onClick={this.onClearLog}>Clear</Button>
+            <Button kind="cancel">Exit</Button>
+          </InputGroup>
         </div>
       </div>
     );
