@@ -4,6 +4,7 @@
 // it isn't in PATH when launched by Chrome.
 
 var fs = require('fs');
+var path = require('path');
 var child = require('child_process');
 
 var nativeMessage = require('../lib/index');
@@ -40,16 +41,22 @@ function getFilesizeInBytes(filename) {
 function messageHandler(msg, push, done) {
     switch (msg.type) {
         case 'download':
-            var bootLoaderPath = './new_uploader/da.bin';
+            //var filePath = 'C:\\msys64\\home\\allspark\\host\\new_uploader\\sample.bin';
+            var filePath = msg.filePath;
+            var bootLoaderPath;
+
             if (process.platform === 'win32') {
-                build = child.exec('./upload.exe -c' + msg.serialPortsValue + ' -f ' + msg.filePath + ' -t cm4', {cwd: './new_uploader'});
+                bootLoaderPath = __dirname + '\\new_uploader\\da.bin';
+                build = child.exec('upload.exe -c ' + msg.serialPortsValue + ' -f ' + filePath + ' -t cm4', { cwd: __dirname + '\\new_uploader' });
             } else {
+                bootLoaderPath = './new_uploader/da.bin';
                 build = child.exec('python ./new_uploader/upload.py -c ' + msg.serialPortsValue + ' -f ' + msg.filePath + ' -t cm4');
             }
 
-            var binFileSize = getFilesizeInBytes(msg.filePath);
+            var binFileSize = getFilesizeInBytes(filePath);
             var bootLoaderFileSize = getFilesizeInBytes(bootLoaderPath);
             var fileSize;
+            
             build.stdout.on('data', function(data) {
                 push({ log: data });
             });
