@@ -1089,12 +1089,12 @@
 	var bidiOrdering = (function() {
 	  // Character types for codepoints 0 to 0xff
 	  var lowTypes = "bbbbbbbbbtstwsbbbbbbbbbbbbbbssstwNN%%%NNNNNN,N,N1111111111NNNNNNNLLLLLLLLLLLLLLLLLLLLLLLLLLNNNNNNLLLLLLLLLLLLLLLLLLLLLLLLLLNNNNbbbbbbsbbbbbbbbbbbbbbbbbbbbbbbbbb,N%%%%NNNNLNNNNN%%11NLNNN1LNNNNNLLLLLLLLLLLLLLLLLLLLLLLNLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLN"
-	  // Character types for codepoints 0x600 to 0x6ff
-	  var arabicTypes = "rrrrrrrrrrrr,rNNmmmmmmrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrmmmmmmmmmmmmmmrrrrrrrnnnnnnnnnn%nnrrrmrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrmmmmmmmmmmmmmmmmmmmNmmmm"
+	  // Character types for codepoints 0x600 to 0x6f9
+	  var arabicTypes = "nnnnnnNNr%%r,rNNmmmmmmmmmmmrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrmmmmmmmmmmmmmmmmmmmmmnnnnnnnnnn%nnrrrmrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrmmmmmmmnNmmmmmmrrmmNmmmmrr1111111111"
 	  function charType(code) {
 	    if (code <= 0xf7) { return lowTypes.charAt(code) }
 	    else if (0x590 <= code && code <= 0x5f4) { return "R" }
-	    else if (0x600 <= code && code <= 0x6ed) { return arabicTypes.charAt(code - 0x600) }
+	    else if (0x600 <= code && code <= 0x6f9) { return arabicTypes.charAt(code - 0x600) }
 	    else if (0x6ee <= code && code <= 0x8ac) { return "r" }
 	    else if (0x2000 <= code && code <= 0x200b) { return "w" }
 	    else if (code == 0x200c) { return "b" }
@@ -3400,7 +3400,7 @@
 	  }
 	}
 
-	function NativeScrollbars(place, scroll, cm) {
+	var NativeScrollbars = function(place, scroll, cm) {
 	  this.cm = cm
 	  var vert = this.vert = elt("div", [elt("div", null, null, "min-width: 1px")], "CodeMirror-vscrollbar")
 	  var horiz = this.horiz = elt("div", [elt("div", null, null, "height: 100%; min-height: 1px")], "CodeMirror-hscrollbar")
@@ -3416,91 +3416,92 @@
 	  this.checkedZeroWidth = false
 	  // Need to set a minimum width to see the scrollbar on IE7 (but must not set it on IE8).
 	  if (ie && ie_version < 8) { this.horiz.style.minHeight = this.vert.style.minWidth = "18px" }
-	}
+	};
 
-	NativeScrollbars.prototype = copyObj({
-	  update: function(measure) {
-	    var needsH = measure.scrollWidth > measure.clientWidth + 1
-	    var needsV = measure.scrollHeight > measure.clientHeight + 1
-	    var sWidth = measure.nativeBarWidth
+	NativeScrollbars.prototype.update = function (measure) {
+	  var needsH = measure.scrollWidth > measure.clientWidth + 1
+	  var needsV = measure.scrollHeight > measure.clientHeight + 1
+	  var sWidth = measure.nativeBarWidth
 
-	    if (needsV) {
-	      this.vert.style.display = "block"
-	      this.vert.style.bottom = needsH ? sWidth + "px" : "0"
-	      var totalHeight = measure.viewHeight - (needsH ? sWidth : 0)
-	      // A bug in IE8 can cause this value to be negative, so guard it.
-	      this.vert.firstChild.style.height =
-	        Math.max(0, measure.scrollHeight - measure.clientHeight + totalHeight) + "px"
-	    } else {
-	      this.vert.style.display = ""
-	      this.vert.firstChild.style.height = "0"
-	    }
-
-	    if (needsH) {
-	      this.horiz.style.display = "block"
-	      this.horiz.style.right = needsV ? sWidth + "px" : "0"
-	      this.horiz.style.left = measure.barLeft + "px"
-	      var totalWidth = measure.viewWidth - measure.barLeft - (needsV ? sWidth : 0)
-	      this.horiz.firstChild.style.width =
-	        (measure.scrollWidth - measure.clientWidth + totalWidth) + "px"
-	    } else {
-	      this.horiz.style.display = ""
-	      this.horiz.firstChild.style.width = "0"
-	    }
-
-	    if (!this.checkedZeroWidth && measure.clientHeight > 0) {
-	      if (sWidth == 0) { this.zeroWidthHack() }
-	      this.checkedZeroWidth = true
-	    }
-
-	    return {right: needsV ? sWidth : 0, bottom: needsH ? sWidth : 0}
-	  },
-	  setScrollLeft: function(pos) {
-	    if (this.horiz.scrollLeft != pos) { this.horiz.scrollLeft = pos }
-	    if (this.disableHoriz) { this.enableZeroWidthBar(this.horiz, this.disableHoriz) }
-	  },
-	  setScrollTop: function(pos) {
-	    if (this.vert.scrollTop != pos) { this.vert.scrollTop = pos }
-	    if (this.disableVert) { this.enableZeroWidthBar(this.vert, this.disableVert) }
-	  },
-	  zeroWidthHack: function() {
-	    var w = mac && !mac_geMountainLion ? "12px" : "18px"
-	    this.horiz.style.height = this.vert.style.width = w
-	    this.horiz.style.pointerEvents = this.vert.style.pointerEvents = "none"
-	    this.disableHoriz = new Delayed
-	    this.disableVert = new Delayed
-	  },
-	  enableZeroWidthBar: function(bar, delay) {
-	    bar.style.pointerEvents = "auto"
-	    function maybeDisable() {
-	      // To find out whether the scrollbar is still visible, we
-	      // check whether the element under the pixel in the bottom
-	      // left corner of the scrollbar box is the scrollbar box
-	      // itself (when the bar is still visible) or its filler child
-	      // (when the bar is hidden). If it is still visible, we keep
-	      // it enabled, if it's hidden, we disable pointer events.
-	      var box = bar.getBoundingClientRect()
-	      var elt = document.elementFromPoint(box.left + 1, box.bottom - 1)
-	      if (elt != bar) { bar.style.pointerEvents = "none" }
-	      else { delay.set(1000, maybeDisable) }
-	    }
-	    delay.set(1000, maybeDisable)
-	  },
-	  clear: function() {
-	    var parent = this.horiz.parentNode
-	    parent.removeChild(this.horiz)
-	    parent.removeChild(this.vert)
+	  if (needsV) {
+	    this.vert.style.display = "block"
+	    this.vert.style.bottom = needsH ? sWidth + "px" : "0"
+	    var totalHeight = measure.viewHeight - (needsH ? sWidth : 0)
+	    // A bug in IE8 can cause this value to be negative, so guard it.
+	    this.vert.firstChild.style.height =
+	      Math.max(0, measure.scrollHeight - measure.clientHeight + totalHeight) + "px"
+	  } else {
+	    this.vert.style.display = ""
+	    this.vert.firstChild.style.height = "0"
 	  }
-	}, NativeScrollbars.prototype)
 
-	function NullScrollbars() {}
+	  if (needsH) {
+	    this.horiz.style.display = "block"
+	    this.horiz.style.right = needsV ? sWidth + "px" : "0"
+	    this.horiz.style.left = measure.barLeft + "px"
+	    var totalWidth = measure.viewWidth - measure.barLeft - (needsV ? sWidth : 0)
+	    this.horiz.firstChild.style.width =
+	      (measure.scrollWidth - measure.clientWidth + totalWidth) + "px"
+	  } else {
+	    this.horiz.style.display = ""
+	    this.horiz.firstChild.style.width = "0"
+	  }
 
-	NullScrollbars.prototype = copyObj({
-	  update: function() { return {bottom: 0, right: 0} },
-	  setScrollLeft: function() {},
-	  setScrollTop: function() {},
-	  clear: function() {}
-	}, NullScrollbars.prototype)
+	  if (!this.checkedZeroWidth && measure.clientHeight > 0) {
+	    if (sWidth == 0) { this.zeroWidthHack() }
+	    this.checkedZeroWidth = true
+	  }
+
+	  return {right: needsV ? sWidth : 0, bottom: needsH ? sWidth : 0}
+	};
+
+	NativeScrollbars.prototype.setScrollLeft = function (pos) {
+	  if (this.horiz.scrollLeft != pos) { this.horiz.scrollLeft = pos }
+	  if (this.disableHoriz) { this.enableZeroWidthBar(this.horiz, this.disableHoriz) }
+	};
+
+	NativeScrollbars.prototype.setScrollTop = function (pos) {
+	  if (this.vert.scrollTop != pos) { this.vert.scrollTop = pos }
+	  if (this.disableVert) { this.enableZeroWidthBar(this.vert, this.disableVert) }
+	};
+
+	NativeScrollbars.prototype.zeroWidthHack = function () {
+	  var w = mac && !mac_geMountainLion ? "12px" : "18px"
+	  this.horiz.style.height = this.vert.style.width = w
+	  this.horiz.style.pointerEvents = this.vert.style.pointerEvents = "none"
+	  this.disableHoriz = new Delayed
+	  this.disableVert = new Delayed
+	};
+
+	NativeScrollbars.prototype.enableZeroWidthBar = function (bar, delay) {
+	  bar.style.pointerEvents = "auto"
+	  function maybeDisable() {
+	    // To find out whether the scrollbar is still visible, we
+	    // check whether the element under the pixel in the bottom
+	    // left corner of the scrollbar box is the scrollbar box
+	    // itself (when the bar is still visible) or its filler child
+	    // (when the bar is hidden). If it is still visible, we keep
+	    // it enabled, if it's hidden, we disable pointer events.
+	    var box = bar.getBoundingClientRect()
+	    var elt = document.elementFromPoint(box.left + 1, box.bottom - 1)
+	    if (elt != bar) { bar.style.pointerEvents = "none" }
+	    else { delay.set(1000, maybeDisable) }
+	  }
+	  delay.set(1000, maybeDisable)
+	};
+
+	NativeScrollbars.prototype.clear = function () {
+	  var parent = this.horiz.parentNode
+	  parent.removeChild(this.horiz)
+	  parent.removeChild(this.vert)
+	};
+
+	var NullScrollbars = function () {};
+
+	NullScrollbars.prototype.update = function () { return {bottom: 0, right: 0} };
+	NullScrollbars.prototype.setScrollLeft = function () {};
+	NullScrollbars.prototype.setScrollTop = function () {};
+	NullScrollbars.prototype.clear = function () {};
 
 	function updateScrollbars(cm, measure) {
 	  if (!measure) { measure = measureForScrollbars(cm) }
@@ -4079,7 +4080,7 @@
 
 	// DISPLAY DRAWING
 
-	function DisplayUpdate(cm, viewport, force) {
+	var DisplayUpdate = function(cm, viewport, force) {
 	  var display = cm.display
 
 	  this.viewport = viewport
@@ -4092,18 +4093,18 @@
 	  this.force = force
 	  this.dims = getDimensions(cm)
 	  this.events = []
-	}
+	};
 
-	DisplayUpdate.prototype.signal = function(emitter, type) {
+	DisplayUpdate.prototype.signal = function (emitter, type) {
 	  if (hasHandler(emitter, type))
 	    { this.events.push(arguments) }
-	}
-	DisplayUpdate.prototype.finish = function() {
-	  var this$1 = this;
+	};
+	DisplayUpdate.prototype.finish = function () {
+	    var this$1 = this;
 
 	  for (var i = 0; i < this.events.length; i++)
 	    { signal.apply(null, this$1.events[i]) }
-	}
+	};
 
 	function maybeClipScrollbars(cm) {
 	  var display = cm.display
@@ -7231,7 +7232,7 @@
 	    for (var i = newBreaks.length - 1; i >= 0; i--)
 	      { replaceRange(cm.doc, val, newBreaks[i], Pos(newBreaks[i].line, newBreaks[i].ch + val.length)) }
 	  })
-	  option("specialChars", /[\u0000-\u001f\u007f\u00ad\u200b-\u200f\u2028\u2029\ufeff]/g, function (cm, val, old) {
+	  option("specialChars", /[\u0000-\u001f\u007f\u00ad\u061c\u200b-\u200f\u2028\u2029\ufeff]/g, function (cm, val, old) {
 	    cm.state.specialChars = new RegExp(val.source + (val.test("\t") ? "" : "|\t"), "g")
 	    if (old != Init) { cm.refresh() }
 	  })
@@ -7321,7 +7322,7 @@
 	function guttersChanged(cm) {
 	  updateGutters(cm)
 	  regChange(cm)
-	  setTimeout(function () { return alignHorizontally(cm); }, 20)
+	  alignHorizontally(cm)
 	}
 
 	function dragDropChanged(cm, value, old) {
@@ -7376,7 +7377,6 @@
 	  themeChanged(this)
 	  if (options.lineWrapping)
 	    { this.display.wrapper.className += " CodeMirror-wrap" }
-	  if (options.autofocus && !mobile) { display.input.focus() }
 	  initScrollbars(this)
 
 	  this.state = {
@@ -7394,6 +7394,8 @@
 	    keySeq: null,  // Unfinished key sequence
 	    specialChars: null
 	  }
+
+	  if (options.autofocus && !mobile) { display.input.focus() }
 
 	  // Override magic textarea content restore that IE sometimes does
 	  // on our hidden textarea on reload
@@ -7750,6 +7752,7 @@
 	      options[option] = value
 	      if (optionHandlers.hasOwnProperty(option))
 	        { operation(this, optionHandlers[option])(this, value, old) }
+	      signal(this, "optionChange", this, option)
 	    },
 
 	    getOption: function(option) {return this.options[option]},
@@ -8257,331 +8260,333 @@
 
 	// CONTENTEDITABLE INPUT STYLE
 
-	function ContentEditableInput(cm) {
+	var ContentEditableInput = function(cm) {
 	  this.cm = cm
 	  this.lastAnchorNode = this.lastAnchorOffset = this.lastFocusNode = this.lastFocusOffset = null
 	  this.polling = new Delayed()
 	  this.composing = null
 	  this.gracePeriod = false
 	  this.readDOMTimeout = null
-	}
+	};
 
-	ContentEditableInput.prototype = copyObj({
-	  init: function(display) {
+	ContentEditableInput.prototype.init = function (display) {
 	    var this$1 = this;
 
-	    var input = this, cm = input.cm
-	    var div = input.div = display.lineDiv
-	    disableBrowserMagic(div, cm.options.spellcheck)
+	  var input = this, cm = input.cm
+	  var div = input.div = display.lineDiv
+	  disableBrowserMagic(div, cm.options.spellcheck)
 
-	    on(div, "paste", function (e) {
-	      if (signalDOMEvent(cm, e) || handlePaste(e, cm)) { return }
-	      // IE doesn't fire input events, so we schedule a read for the pasted content in this way
-	      if (ie_version <= 11) { setTimeout(operation(cm, function () {
-	        if (!input.pollContent()) { regChange(cm) }
-	      }), 20) }
-	    })
+	  on(div, "paste", function (e) {
+	    if (signalDOMEvent(cm, e) || handlePaste(e, cm)) { return }
+	    // IE doesn't fire input events, so we schedule a read for the pasted content in this way
+	    if (ie_version <= 11) { setTimeout(operation(cm, function () {
+	      if (!input.pollContent()) { regChange(cm) }
+	    }), 20) }
+	  })
 
-	    on(div, "compositionstart", function (e) {
-	      this$1.composing = {data: e.data}
-	    })
-	    on(div, "compositionupdate", function (e) {
-	      if (!this$1.composing) { this$1.composing = {data: e.data} }
-	    })
-	    on(div, "compositionend", function (e) {
-	      if (this$1.composing) {
-	        if (e.data != this$1.composing.data) { this$1.readFromDOMSoon() }
-	        this$1.composing = null
+	  on(div, "compositionstart", function (e) {
+	    this$1.composing = {data: e.data, done: false}
+	  })
+	  on(div, "compositionupdate", function (e) {
+	    if (!this$1.composing) { this$1.composing = {data: e.data, done: false} }
+	  })
+	  on(div, "compositionend", function (e) {
+	    if (this$1.composing) {
+	      if (e.data != this$1.composing.data) { this$1.readFromDOMSoon() }
+	      this$1.composing.done = true
+	    }
+	  })
+
+	  on(div, "touchstart", function () { return input.forceCompositionEnd(); })
+
+	  on(div, "input", function () {
+	    if (!this$1.composing) { this$1.readFromDOMSoon() }
+	  })
+
+	  function onCopyCut(e) {
+	    if (signalDOMEvent(cm, e)) { return }
+	    if (cm.somethingSelected()) {
+	      setLastCopied({lineWise: false, text: cm.getSelections()})
+	      if (e.type == "cut") { cm.replaceSelection("", null, "cut") }
+	    } else if (!cm.options.lineWiseCopyCut) {
+	      return
+	    } else {
+	      var ranges = copyableRanges(cm)
+	      setLastCopied({lineWise: true, text: ranges.text})
+	      if (e.type == "cut") {
+	        cm.operation(function () {
+	          cm.setSelections(ranges.ranges, 0, sel_dontScroll)
+	          cm.replaceSelection("", null, "cut")
+	        })
 	      }
-	    })
-
-	    on(div, "touchstart", function () { return input.forceCompositionEnd(); })
-
-	    on(div, "input", function () {
-	      if (!this$1.composing) { this$1.readFromDOMSoon() }
-	    })
-
-	    function onCopyCut(e) {
-	      if (signalDOMEvent(cm, e)) { return }
-	      if (cm.somethingSelected()) {
-	        setLastCopied({lineWise: false, text: cm.getSelections()})
-	        if (e.type == "cut") { cm.replaceSelection("", null, "cut") }
-	      } else if (!cm.options.lineWiseCopyCut) {
+	    }
+	    if (e.clipboardData) {
+	      e.clipboardData.clearData()
+	      var content = lastCopied.text.join("\n")
+	      // iOS exposes the clipboard API, but seems to discard content inserted into it
+	      e.clipboardData.setData("Text", content)
+	      if (e.clipboardData.getData("Text") == content) {
+	        e.preventDefault()
 	        return
-	      } else {
-	        var ranges = copyableRanges(cm)
-	        setLastCopied({lineWise: true, text: ranges.text})
-	        if (e.type == "cut") {
-	          cm.operation(function () {
-	            cm.setSelections(ranges.ranges, 0, sel_dontScroll)
-	            cm.replaceSelection("", null, "cut")
-	          })
-	        }
 	      }
-	      if (e.clipboardData) {
-	        e.clipboardData.clearData()
-	        var content = lastCopied.text.join("\n")
-	        // iOS exposes the clipboard API, but seems to discard content inserted into it
-	        e.clipboardData.setData("Text", content)
-	        if (e.clipboardData.getData("Text") == content) {
-	          e.preventDefault()
-	          return
-	        }
-	      }
-	      // Old-fashioned briefly-focus-a-textarea hack
-	      var kludge = hiddenTextarea(), te = kludge.firstChild
-	      cm.display.lineSpace.insertBefore(kludge, cm.display.lineSpace.firstChild)
-	      te.value = lastCopied.text.join("\n")
-	      var hadFocus = document.activeElement
-	      selectInput(te)
-	      setTimeout(function () {
-	        cm.display.lineSpace.removeChild(kludge)
-	        hadFocus.focus()
-	        if (hadFocus == div) { input.showPrimarySelection() }
-	      }, 50)
 	    }
-	    on(div, "copy", onCopyCut)
-	    on(div, "cut", onCopyCut)
-	  },
+	    // Old-fashioned briefly-focus-a-textarea hack
+	    var kludge = hiddenTextarea(), te = kludge.firstChild
+	    cm.display.lineSpace.insertBefore(kludge, cm.display.lineSpace.firstChild)
+	    te.value = lastCopied.text.join("\n")
+	    var hadFocus = document.activeElement
+	    selectInput(te)
+	    setTimeout(function () {
+	      cm.display.lineSpace.removeChild(kludge)
+	      hadFocus.focus()
+	      if (hadFocus == div) { input.showPrimarySelection() }
+	    }, 50)
+	  }
+	  on(div, "copy", onCopyCut)
+	  on(div, "cut", onCopyCut)
+	};
 
-	  prepareSelection: function() {
-	    var result = prepareSelection(this.cm, false)
-	    result.focus = this.cm.state.focused
-	    return result
-	  },
+	ContentEditableInput.prototype.prepareSelection = function () {
+	  var result = prepareSelection(this.cm, false)
+	  result.focus = this.cm.state.focused
+	  return result
+	};
 
-	  showSelection: function(info, takeFocus) {
-	    if (!info || !this.cm.display.view.length) { return }
-	    if (info.focus || takeFocus) { this.showPrimarySelection() }
-	    this.showMultipleSelections(info)
-	  },
+	ContentEditableInput.prototype.showSelection = function (info, takeFocus) {
+	  if (!info || !this.cm.display.view.length) { return }
+	  if (info.focus || takeFocus) { this.showPrimarySelection() }
+	  this.showMultipleSelections(info)
+	};
 
-	  showPrimarySelection: function() {
-	    var sel = window.getSelection(), prim = this.cm.doc.sel.primary()
-	    var curAnchor = domToPos(this.cm, sel.anchorNode, sel.anchorOffset)
-	    var curFocus = domToPos(this.cm, sel.focusNode, sel.focusOffset)
-	    if (curAnchor && !curAnchor.bad && curFocus && !curFocus.bad &&
-	        cmp(minPos(curAnchor, curFocus), prim.from()) == 0 &&
-	        cmp(maxPos(curAnchor, curFocus), prim.to()) == 0)
-	      { return }
+	ContentEditableInput.prototype.showPrimarySelection = function () {
+	  var sel = window.getSelection(), prim = this.cm.doc.sel.primary()
+	  var curAnchor = domToPos(this.cm, sel.anchorNode, sel.anchorOffset)
+	  var curFocus = domToPos(this.cm, sel.focusNode, sel.focusOffset)
+	  if (curAnchor && !curAnchor.bad && curFocus && !curFocus.bad &&
+	      cmp(minPos(curAnchor, curFocus), prim.from()) == 0 &&
+	      cmp(maxPos(curAnchor, curFocus), prim.to()) == 0)
+	    { return }
 
-	    var start = posToDOM(this.cm, prim.from())
-	    var end = posToDOM(this.cm, prim.to())
-	    if (!start && !end) { return }
+	  var start = posToDOM(this.cm, prim.from())
+	  var end = posToDOM(this.cm, prim.to())
+	  if (!start && !end) { return }
 
-	    var view = this.cm.display.view
-	    var old = sel.rangeCount && sel.getRangeAt(0)
-	    if (!start) {
-	      start = {node: view[0].measure.map[2], offset: 0}
-	    } else if (!end) { // FIXME dangerously hacky
-	      var measure = view[view.length - 1].measure
-	      var map = measure.maps ? measure.maps[measure.maps.length - 1] : measure.map
-	      end = {node: map[map.length - 1], offset: map[map.length - 2] - map[map.length - 3]}
-	    }
+	  var view = this.cm.display.view
+	  var old = sel.rangeCount && sel.getRangeAt(0)
+	  if (!start) {
+	    start = {node: view[0].measure.map[2], offset: 0}
+	  } else if (!end) { // FIXME dangerously hacky
+	    var measure = view[view.length - 1].measure
+	    var map = measure.maps ? measure.maps[measure.maps.length - 1] : measure.map
+	    end = {node: map[map.length - 1], offset: map[map.length - 2] - map[map.length - 3]}
+	  }
 
-	    var rng
-	    try { rng = range(start.node, start.offset, end.offset, end.node) }
-	    catch(e) {} // Our model of the DOM might be outdated, in which case the range we try to set can be impossible
-	    if (rng) {
-	      if (!gecko && this.cm.state.focused) {
-	        sel.collapse(start.node, start.offset)
-	        if (!rng.collapsed) {
-	          sel.removeAllRanges()
-	          sel.addRange(rng)
-	        }
-	      } else {
+	  var rng
+	  try { rng = range(start.node, start.offset, end.offset, end.node) }
+	  catch(e) {} // Our model of the DOM might be outdated, in which case the range we try to set can be impossible
+	  if (rng) {
+	    if (!gecko && this.cm.state.focused) {
+	      sel.collapse(start.node, start.offset)
+	      if (!rng.collapsed) {
 	        sel.removeAllRanges()
 	        sel.addRange(rng)
 	      }
-	      if (old && sel.anchorNode == null) { sel.addRange(old) }
-	      else if (gecko) { this.startGracePeriod() }
+	    } else {
+	      sel.removeAllRanges()
+	      sel.addRange(rng)
 	    }
-	    this.rememberSelection()
-	  },
+	    if (old && sel.anchorNode == null) { sel.addRange(old) }
+	    else if (gecko) { this.startGracePeriod() }
+	  }
+	  this.rememberSelection()
+	};
 
-	  startGracePeriod: function() {
+	ContentEditableInput.prototype.startGracePeriod = function () {
 	    var this$1 = this;
 
-	    clearTimeout(this.gracePeriod)
-	    this.gracePeriod = setTimeout(function () {
-	      this$1.gracePeriod = false
-	      if (this$1.selectionChanged())
-	        { this$1.cm.operation(function () { return this$1.cm.curOp.selectionChanged = true; }) }
-	    }, 20)
-	  },
+	  clearTimeout(this.gracePeriod)
+	  this.gracePeriod = setTimeout(function () {
+	    this$1.gracePeriod = false
+	    if (this$1.selectionChanged())
+	      { this$1.cm.operation(function () { return this$1.cm.curOp.selectionChanged = true; }) }
+	  }, 20)
+	};
 
-	  showMultipleSelections: function(info) {
-	    removeChildrenAndAdd(this.cm.display.cursorDiv, info.cursors)
-	    removeChildrenAndAdd(this.cm.display.selectionDiv, info.selection)
-	  },
+	ContentEditableInput.prototype.showMultipleSelections = function (info) {
+	  removeChildrenAndAdd(this.cm.display.cursorDiv, info.cursors)
+	  removeChildrenAndAdd(this.cm.display.selectionDiv, info.selection)
+	};
 
-	  rememberSelection: function() {
-	    var sel = window.getSelection()
-	    this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
-	    this.lastFocusNode = sel.focusNode; this.lastFocusOffset = sel.focusOffset
-	  },
+	ContentEditableInput.prototype.rememberSelection = function () {
+	  var sel = window.getSelection()
+	  this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
+	  this.lastFocusNode = sel.focusNode; this.lastFocusOffset = sel.focusOffset
+	};
 
-	  selectionInEditor: function() {
-	    var sel = window.getSelection()
-	    if (!sel.rangeCount) { return false }
-	    var node = sel.getRangeAt(0).commonAncestorContainer
-	    return contains(this.div, node)
-	  },
+	ContentEditableInput.prototype.selectionInEditor = function () {
+	  var sel = window.getSelection()
+	  if (!sel.rangeCount) { return false }
+	  var node = sel.getRangeAt(0).commonAncestorContainer
+	  return contains(this.div, node)
+	};
 
-	  focus: function() {
-	    if (this.cm.options.readOnly != "nocursor") {
-	      if (!this.selectionInEditor())
-	        { this.showSelection(this.prepareSelection(), true) }
-	      this.div.focus()
-	    }
-	  },
-	  blur: function() { this.div.blur() },
-	  getField: function() { return this.div },
-
-	  supportsTouch: function() { return true },
-
-	  receivedFocus: function() {
-	    var input = this
-	    if (this.selectionInEditor())
-	      { this.pollSelection() }
-	    else
-	      { runInOp(this.cm, function () { return input.cm.curOp.selectionChanged = true; }) }
-
-	    function poll() {
-	      if (input.cm.state.focused) {
-	        input.pollSelection()
-	        input.polling.set(input.cm.options.pollInterval, poll)
-	      }
-	    }
-	    this.polling.set(this.cm.options.pollInterval, poll)
-	  },
-
-	  selectionChanged: function() {
-	    var sel = window.getSelection()
-	    return sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
-	      sel.focusNode != this.lastFocusNode || sel.focusOffset != this.lastFocusOffset
-	  },
-
-	  pollSelection: function() {
-	    if (!this.composing && this.readDOMTimeout == null && !this.gracePeriod && this.selectionChanged()) {
-	      var sel = window.getSelection(), cm = this.cm
-	      this.rememberSelection()
-	      var anchor = domToPos(cm, sel.anchorNode, sel.anchorOffset)
-	      var head = domToPos(cm, sel.focusNode, sel.focusOffset)
-	      if (anchor && head) { runInOp(cm, function () {
-	        setSelection(cm.doc, simpleSelection(anchor, head), sel_dontScroll)
-	        if (anchor.bad || head.bad) { cm.curOp.selectionChanged = true }
-	      }) }
-	    }
-	  },
-
-	  pollContent: function() {
-	    if (this.readDOMTimeout != null) {
-	      clearTimeout(this.readDOMTimeout)
-	      this.readDOMTimeout = null
-	    }
-
-	    var cm = this.cm, display = cm.display, sel = cm.doc.sel.primary()
-	    var from = sel.from(), to = sel.to()
-	    if (from.ch == 0 && from.line > cm.firstLine())
-	      { from = Pos(from.line - 1, getLine(cm.doc, from.line - 1).length) }
-	    if (to.ch == getLine(cm.doc, to.line).text.length && to.line < cm.lastLine())
-	      { to = Pos(to.line + 1, 0) }
-	    if (from.line < display.viewFrom || to.line > display.viewTo - 1) { return false }
-
-	    var fromIndex, fromLine, fromNode
-	    if (from.line == display.viewFrom || (fromIndex = findViewIndex(cm, from.line)) == 0) {
-	      fromLine = lineNo(display.view[0].line)
-	      fromNode = display.view[0].node
-	    } else {
-	      fromLine = lineNo(display.view[fromIndex].line)
-	      fromNode = display.view[fromIndex - 1].node.nextSibling
-	    }
-	    var toIndex = findViewIndex(cm, to.line)
-	    var toLine, toNode
-	    if (toIndex == display.view.length - 1) {
-	      toLine = display.viewTo - 1
-	      toNode = display.lineDiv.lastChild
-	    } else {
-	      toLine = lineNo(display.view[toIndex + 1].line) - 1
-	      toNode = display.view[toIndex + 1].node.previousSibling
-	    }
-
-	    if (!fromNode) { return false }
-	    var newText = cm.doc.splitLines(domTextBetween(cm, fromNode, toNode, fromLine, toLine))
-	    var oldText = getBetween(cm.doc, Pos(fromLine, 0), Pos(toLine, getLine(cm.doc, toLine).text.length))
-	    while (newText.length > 1 && oldText.length > 1) {
-	      if (lst(newText) == lst(oldText)) { newText.pop(); oldText.pop(); toLine-- }
-	      else if (newText[0] == oldText[0]) { newText.shift(); oldText.shift(); fromLine++ }
-	      else { break }
-	    }
-
-	    var cutFront = 0, cutEnd = 0
-	    var newTop = newText[0], oldTop = oldText[0], maxCutFront = Math.min(newTop.length, oldTop.length)
-	    while (cutFront < maxCutFront && newTop.charCodeAt(cutFront) == oldTop.charCodeAt(cutFront))
-	      { ++cutFront }
-	    var newBot = lst(newText), oldBot = lst(oldText)
-	    var maxCutEnd = Math.min(newBot.length - (newText.length == 1 ? cutFront : 0),
-	                             oldBot.length - (oldText.length == 1 ? cutFront : 0))
-	    while (cutEnd < maxCutEnd &&
-	           newBot.charCodeAt(newBot.length - cutEnd - 1) == oldBot.charCodeAt(oldBot.length - cutEnd - 1))
-	      { ++cutEnd }
-
-	    newText[newText.length - 1] = newBot.slice(0, newBot.length - cutEnd).replace(/^\u200b+/, "")
-	    newText[0] = newText[0].slice(cutFront).replace(/\u200b+$/, "")
-
-	    var chFrom = Pos(fromLine, cutFront)
-	    var chTo = Pos(toLine, oldText.length ? lst(oldText).length - cutEnd : 0)
-	    if (newText.length > 1 || newText[0] || cmp(chFrom, chTo)) {
-	      replaceRange(cm.doc, newText, chFrom, chTo, "+input")
-	      return true
-	    }
-	  },
-
-	  ensurePolled: function() {
-	    this.forceCompositionEnd()
-	  },
-	  reset: function() {
-	    this.forceCompositionEnd()
-	  },
-	  forceCompositionEnd: function() {
-	    if (!this.composing) { return }
-	    this.composing = null
-	    if (!this.pollContent()) { regChange(this.cm) }
-	    this.div.blur()
+	ContentEditableInput.prototype.focus = function () {
+	  if (this.cm.options.readOnly != "nocursor") {
+	    if (!this.selectionInEditor())
+	      { this.showSelection(this.prepareSelection(), true) }
 	    this.div.focus()
-	  },
-	  readFromDOMSoon: function() {
+	  }
+	};
+	ContentEditableInput.prototype.blur = function () { this.div.blur() };
+	ContentEditableInput.prototype.getField = function () { return this.div };
+
+	ContentEditableInput.prototype.supportsTouch = function () { return true };
+
+	ContentEditableInput.prototype.receivedFocus = function () {
+	  var input = this
+	  if (this.selectionInEditor())
+	    { this.pollSelection() }
+	  else
+	    { runInOp(this.cm, function () { return input.cm.curOp.selectionChanged = true; }) }
+
+	  function poll() {
+	    if (input.cm.state.focused) {
+	      input.pollSelection()
+	      input.polling.set(input.cm.options.pollInterval, poll)
+	    }
+	  }
+	  this.polling.set(this.cm.options.pollInterval, poll)
+	};
+
+	ContentEditableInput.prototype.selectionChanged = function () {
+	  var sel = window.getSelection()
+	  return sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
+	    sel.focusNode != this.lastFocusNode || sel.focusOffset != this.lastFocusOffset
+	};
+
+	ContentEditableInput.prototype.pollSelection = function () {
+	  if (!this.composing && this.readDOMTimeout == null && !this.gracePeriod && this.selectionChanged()) {
+	    var sel = window.getSelection(), cm = this.cm
+	    this.rememberSelection()
+	    var anchor = domToPos(cm, sel.anchorNode, sel.anchorOffset)
+	    var head = domToPos(cm, sel.focusNode, sel.focusOffset)
+	    if (anchor && head) { runInOp(cm, function () {
+	      setSelection(cm.doc, simpleSelection(anchor, head), sel_dontScroll)
+	      if (anchor.bad || head.bad) { cm.curOp.selectionChanged = true }
+	    }) }
+	  }
+	};
+
+	ContentEditableInput.prototype.pollContent = function () {
+	  if (this.readDOMTimeout != null) {
+	    clearTimeout(this.readDOMTimeout)
+	    this.readDOMTimeout = null
+	  }
+
+	  var cm = this.cm, display = cm.display, sel = cm.doc.sel.primary()
+	  var from = sel.from(), to = sel.to()
+	  if (from.ch == 0 && from.line > cm.firstLine())
+	    { from = Pos(from.line - 1, getLine(cm.doc, from.line - 1).length) }
+	  if (to.ch == getLine(cm.doc, to.line).text.length && to.line < cm.lastLine())
+	    { to = Pos(to.line + 1, 0) }
+	  if (from.line < display.viewFrom || to.line > display.viewTo - 1) { return false }
+
+	  var fromIndex, fromLine, fromNode
+	  if (from.line == display.viewFrom || (fromIndex = findViewIndex(cm, from.line)) == 0) {
+	    fromLine = lineNo(display.view[0].line)
+	    fromNode = display.view[0].node
+	  } else {
+	    fromLine = lineNo(display.view[fromIndex].line)
+	    fromNode = display.view[fromIndex - 1].node.nextSibling
+	  }
+	  var toIndex = findViewIndex(cm, to.line)
+	  var toLine, toNode
+	  if (toIndex == display.view.length - 1) {
+	    toLine = display.viewTo - 1
+	    toNode = display.lineDiv.lastChild
+	  } else {
+	    toLine = lineNo(display.view[toIndex + 1].line) - 1
+	    toNode = display.view[toIndex + 1].node.previousSibling
+	  }
+
+	  if (!fromNode) { return false }
+	  var newText = cm.doc.splitLines(domTextBetween(cm, fromNode, toNode, fromLine, toLine))
+	  var oldText = getBetween(cm.doc, Pos(fromLine, 0), Pos(toLine, getLine(cm.doc, toLine).text.length))
+	  while (newText.length > 1 && oldText.length > 1) {
+	    if (lst(newText) == lst(oldText)) { newText.pop(); oldText.pop(); toLine-- }
+	    else if (newText[0] == oldText[0]) { newText.shift(); oldText.shift(); fromLine++ }
+	    else { break }
+	  }
+
+	  var cutFront = 0, cutEnd = 0
+	  var newTop = newText[0], oldTop = oldText[0], maxCutFront = Math.min(newTop.length, oldTop.length)
+	  while (cutFront < maxCutFront && newTop.charCodeAt(cutFront) == oldTop.charCodeAt(cutFront))
+	    { ++cutFront }
+	  var newBot = lst(newText), oldBot = lst(oldText)
+	  var maxCutEnd = Math.min(newBot.length - (newText.length == 1 ? cutFront : 0),
+	                           oldBot.length - (oldText.length == 1 ? cutFront : 0))
+	  while (cutEnd < maxCutEnd &&
+	         newBot.charCodeAt(newBot.length - cutEnd - 1) == oldBot.charCodeAt(oldBot.length - cutEnd - 1))
+	    { ++cutEnd }
+
+	  newText[newText.length - 1] = newBot.slice(0, newBot.length - cutEnd).replace(/^\u200b+/, "")
+	  newText[0] = newText[0].slice(cutFront).replace(/\u200b+$/, "")
+
+	  var chFrom = Pos(fromLine, cutFront)
+	  var chTo = Pos(toLine, oldText.length ? lst(oldText).length - cutEnd : 0)
+	  if (newText.length > 1 || newText[0] || cmp(chFrom, chTo)) {
+	    replaceRange(cm.doc, newText, chFrom, chTo, "+input")
+	    return true
+	  }
+	};
+
+	ContentEditableInput.prototype.ensurePolled = function () {
+	  this.forceCompositionEnd()
+	};
+	ContentEditableInput.prototype.reset = function () {
+	  this.forceCompositionEnd()
+	};
+	ContentEditableInput.prototype.forceCompositionEnd = function () {
+	  if (!this.composing) { return }
+	  clearTimeout(this.readDOMTimeout)
+	  this.composing = null
+	  if (!this.pollContent()) { regChange(this.cm) }
+	  this.div.blur()
+	  this.div.focus()
+	};
+	ContentEditableInput.prototype.readFromDOMSoon = function () {
 	    var this$1 = this;
 
-	    if (this.readDOMTimeout != null) { return }
-	    this.readDOMTimeout = setTimeout(function () {
-	      this$1.readDOMTimeout = null
-	      if (this$1.composing) { return }
-	      if (this$1.cm.isReadOnly() || !this$1.pollContent())
-	        { runInOp(this$1.cm, function () { return regChange(this$1.cm); }) }
-	    }, 80)
-	  },
+	  if (this.readDOMTimeout != null) { return }
+	  this.readDOMTimeout = setTimeout(function () {
+	    this$1.readDOMTimeout = null
+	    if (this$1.composing) {
+	      if (this$1.composing.done) { this$1.composing = null }
+	      else { return }
+	    }
+	    if (this$1.cm.isReadOnly() || !this$1.pollContent())
+	      { runInOp(this$1.cm, function () { return regChange(this$1.cm); }) }
+	  }, 80)
+	};
 
-	  setUneditable: function(node) {
-	    node.contentEditable = "false"
-	  },
+	ContentEditableInput.prototype.setUneditable = function (node) {
+	  node.contentEditable = "false"
+	};
 
-	  onKeyPress: function(e) {
-	    e.preventDefault()
-	    if (!this.cm.isReadOnly())
-	      { operation(this.cm, applyTextInput)(this.cm, String.fromCharCode(e.charCode == null ? e.keyCode : e.charCode), 0) }
-	  },
+	ContentEditableInput.prototype.onKeyPress = function (e) {
+	  e.preventDefault()
+	  if (!this.cm.isReadOnly())
+	    { operation(this.cm, applyTextInput)(this.cm, String.fromCharCode(e.charCode == null ? e.keyCode : e.charCode), 0) }
+	};
 
-	  readOnlyChanged: function(val) {
-	    this.div.contentEditable = String(val != "nocursor")
-	  },
+	ContentEditableInput.prototype.readOnlyChanged = function (val) {
+	  this.div.contentEditable = String(val != "nocursor")
+	};
 
-	  onContextMenu: nothing,
-	  resetPosition: nothing,
+	ContentEditableInput.prototype.onContextMenu = function () {};
+	ContentEditableInput.prototype.resetPosition = function () {};
 
-	  needsContentAttribute: true
-	  }, ContentEditableInput.prototype)
+	ContentEditableInput.prototype.needsContentAttribute = true
 
 	function posToDOM(cm, pos) {
 	  var view = findViewForLine(cm, pos.line)
@@ -8718,7 +8723,7 @@
 
 	// TEXTAREA INPUT STYLE
 
-	function TextareaInput(cm) {
+	var TextareaInput = function(cm) {
 	  this.cm = cm
 	  // See input.poll and input.reset
 	  this.prevInput = ""
@@ -8735,335 +8740,333 @@
 	  // Used to work around IE issue with selection being forgotten when focus moves away from textarea
 	  this.hasSelection = false
 	  this.composing = null
-	}
+	};
 
-	TextareaInput.prototype = copyObj({
-	  init: function(display) {
+	TextareaInput.prototype.init = function (display) {
 	    var this$1 = this;
 
-	    var input = this, cm = this.cm
+	  var input = this, cm = this.cm
 
-	    // Wraps and hides input textarea
-	    var div = this.wrapper = hiddenTextarea()
-	    // The semihidden textarea that is focused when the editor is
-	    // focused, and receives input.
-	    var te = this.textarea = div.firstChild
-	    display.wrapper.insertBefore(div, display.wrapper.firstChild)
+	  // Wraps and hides input textarea
+	  var div = this.wrapper = hiddenTextarea()
+	  // The semihidden textarea that is focused when the editor is
+	  // focused, and receives input.
+	  var te = this.textarea = div.firstChild
+	  display.wrapper.insertBefore(div, display.wrapper.firstChild)
 
-	    // Needed to hide big blue blinking cursor on Mobile Safari (doesn't seem to work in iOS 8 anymore)
-	    if (ios) { te.style.width = "0px" }
+	  // Needed to hide big blue blinking cursor on Mobile Safari (doesn't seem to work in iOS 8 anymore)
+	  if (ios) { te.style.width = "0px" }
 
-	    on(te, "input", function () {
-	      if (ie && ie_version >= 9 && this$1.hasSelection) { this$1.hasSelection = null }
-	      input.poll()
-	    })
+	  on(te, "input", function () {
+	    if (ie && ie_version >= 9 && this$1.hasSelection) { this$1.hasSelection = null }
+	    input.poll()
+	  })
 
-	    on(te, "paste", function (e) {
-	      if (signalDOMEvent(cm, e) || handlePaste(e, cm)) { return }
+	  on(te, "paste", function (e) {
+	    if (signalDOMEvent(cm, e) || handlePaste(e, cm)) { return }
 
-	      cm.state.pasteIncoming = true
-	      input.fastPoll()
-	    })
+	    cm.state.pasteIncoming = true
+	    input.fastPoll()
+	  })
 
-	    function prepareCopyCut(e) {
-	      if (signalDOMEvent(cm, e)) { return }
-	      if (cm.somethingSelected()) {
-	        setLastCopied({lineWise: false, text: cm.getSelections()})
-	        if (input.inaccurateSelection) {
-	          input.prevInput = ""
-	          input.inaccurateSelection = false
-	          te.value = lastCopied.text.join("\n")
-	          selectInput(te)
-	        }
-	      } else if (!cm.options.lineWiseCopyCut) {
-	        return
-	      } else {
-	        var ranges = copyableRanges(cm)
-	        setLastCopied({lineWise: true, text: ranges.text})
-	        if (e.type == "cut") {
-	          cm.setSelections(ranges.ranges, null, sel_dontScroll)
-	        } else {
-	          input.prevInput = ""
-	          te.value = ranges.text.join("\n")
-	          selectInput(te)
-	        }
-	      }
-	      if (e.type == "cut") { cm.state.cutIncoming = true }
-	    }
-	    on(te, "cut", prepareCopyCut)
-	    on(te, "copy", prepareCopyCut)
-
-	    on(display.scroller, "paste", function (e) {
-	      if (eventInWidget(display, e) || signalDOMEvent(cm, e)) { return }
-	      cm.state.pasteIncoming = true
-	      input.focus()
-	    })
-
-	    // Prevent normal selection in the editor (we handle our own)
-	    on(display.lineSpace, "selectstart", function (e) {
-	      if (!eventInWidget(display, e)) { e_preventDefault(e) }
-	    })
-
-	    on(te, "compositionstart", function () {
-	      var start = cm.getCursor("from")
-	      if (input.composing) { input.composing.range.clear() }
-	      input.composing = {
-	        start: start,
-	        range: cm.markText(start, cm.getCursor("to"), {className: "CodeMirror-composing"})
-	      }
-	    })
-	    on(te, "compositionend", function () {
-	      if (input.composing) {
-	        input.poll()
-	        input.composing.range.clear()
-	        input.composing = null
-	      }
-	    })
-	  },
-
-	  prepareSelection: function() {
-	    // Redraw the selection and/or cursor
-	    var cm = this.cm, display = cm.display, doc = cm.doc
-	    var result = prepareSelection(cm)
-
-	    // Move the hidden textarea near the cursor to prevent scrolling artifacts
-	    if (cm.options.moveInputWithCursor) {
-	      var headPos = cursorCoords(cm, doc.sel.primary().head, "div")
-	      var wrapOff = display.wrapper.getBoundingClientRect(), lineOff = display.lineDiv.getBoundingClientRect()
-	      result.teTop = Math.max(0, Math.min(display.wrapper.clientHeight - 10,
-	                                          headPos.top + lineOff.top - wrapOff.top))
-	      result.teLeft = Math.max(0, Math.min(display.wrapper.clientWidth - 10,
-	                                           headPos.left + lineOff.left - wrapOff.left))
-	    }
-
-	    return result
-	  },
-
-	  showSelection: function(drawn) {
-	    var cm = this.cm, display = cm.display
-	    removeChildrenAndAdd(display.cursorDiv, drawn.cursors)
-	    removeChildrenAndAdd(display.selectionDiv, drawn.selection)
-	    if (drawn.teTop != null) {
-	      this.wrapper.style.top = drawn.teTop + "px"
-	      this.wrapper.style.left = drawn.teLeft + "px"
-	    }
-	  },
-
-	  // Reset the input to correspond to the selection (or to be empty,
-	  // when not typing and nothing is selected)
-	  reset: function(typing) {
-	    if (this.contextMenuPending) { return }
-	    var minimal, selected, cm = this.cm, doc = cm.doc
+	  function prepareCopyCut(e) {
+	    if (signalDOMEvent(cm, e)) { return }
 	    if (cm.somethingSelected()) {
-	      this.prevInput = ""
-	      var range = doc.sel.primary()
-	      minimal = hasCopyEvent &&
-	        (range.to().line - range.from().line > 100 || (selected = cm.getSelection()).length > 1000)
-	      var content = minimal ? "-" : selected || cm.getSelection()
-	      this.textarea.value = content
-	      if (cm.state.focused) { selectInput(this.textarea) }
-	      if (ie && ie_version >= 9) { this.hasSelection = content }
-	    } else if (!typing) {
-	      this.prevInput = this.textarea.value = ""
-	      if (ie && ie_version >= 9) { this.hasSelection = null }
-	    }
-	    this.inaccurateSelection = minimal
-	  },
-
-	  getField: function() { return this.textarea },
-
-	  supportsTouch: function() { return false },
-
-	  focus: function() {
-	    if (this.cm.options.readOnly != "nocursor" && (!mobile || activeElt() != this.textarea)) {
-	      try { this.textarea.focus() }
-	      catch (e) {} // IE8 will throw if the textarea is display: none or not in DOM
-	    }
-	  },
-
-	  blur: function() { this.textarea.blur() },
-
-	  resetPosition: function() {
-	    this.wrapper.style.top = this.wrapper.style.left = 0
-	  },
-
-	  receivedFocus: function() { this.slowPoll() },
-
-	  // Poll for input changes, using the normal rate of polling. This
-	  // runs as long as the editor is focused.
-	  slowPoll: function() {
-	    var this$1 = this;
-
-	    if (this.pollingFast) { return }
-	    this.polling.set(this.cm.options.pollInterval, function () {
-	      this$1.poll()
-	      if (this$1.cm.state.focused) { this$1.slowPoll() }
-	    })
-	  },
-
-	  // When an event has just come in that is likely to add or change
-	  // something in the input textarea, we poll faster, to ensure that
-	  // the change appears on the screen quickly.
-	  fastPoll: function() {
-	    var missed = false, input = this
-	    input.pollingFast = true
-	    function p() {
-	      var changed = input.poll()
-	      if (!changed && !missed) {missed = true; input.polling.set(60, p)}
-	      else {input.pollingFast = false; input.slowPoll()}
-	    }
-	    input.polling.set(20, p)
-	  },
-
-	  // Read input from the textarea, and update the document to match.
-	  // When something is selected, it is present in the textarea, and
-	  // selected (unless it is huge, in which case a placeholder is
-	  // used). When nothing is selected, the cursor sits after previously
-	  // seen text (can be empty), which is stored in prevInput (we must
-	  // not reset the textarea when typing, because that breaks IME).
-	  poll: function() {
-	    var this$1 = this;
-
-	    var cm = this.cm, input = this.textarea, prevInput = this.prevInput
-	    // Since this is called a *lot*, try to bail out as cheaply as
-	    // possible when it is clear that nothing happened. hasSelection
-	    // will be the case when there is a lot of text in the textarea,
-	    // in which case reading its value would be expensive.
-	    if (this.contextMenuPending || !cm.state.focused ||
-	        (hasSelection(input) && !prevInput && !this.composing) ||
-	        cm.isReadOnly() || cm.options.disableInput || cm.state.keySeq)
-	      { return false }
-
-	    var text = input.value
-	    // If nothing changed, bail.
-	    if (text == prevInput && !cm.somethingSelected()) { return false }
-	    // Work around nonsensical selection resetting in IE9/10, and
-	    // inexplicable appearance of private area unicode characters on
-	    // some key combos in Mac (#2689).
-	    if (ie && ie_version >= 9 && this.hasSelection === text ||
-	        mac && /[\uf700-\uf7ff]/.test(text)) {
-	      cm.display.input.reset()
-	      return false
-	    }
-
-	    if (cm.doc.sel == cm.display.selForContextMenu) {
-	      var first = text.charCodeAt(0)
-	      if (first == 0x200b && !prevInput) { prevInput = "\u200b" }
-	      if (first == 0x21da) { this.reset(); return this.cm.execCommand("undo") }
-	    }
-	    // Find the part of the input that is actually new
-	    var same = 0, l = Math.min(prevInput.length, text.length)
-	    while (same < l && prevInput.charCodeAt(same) == text.charCodeAt(same)) { ++same }
-
-	    runInOp(cm, function () {
-	      applyTextInput(cm, text.slice(same), prevInput.length - same,
-	                     null, this$1.composing ? "*compose" : null)
-
-	      // Don't leave long text in the textarea, since it makes further polling slow
-	      if (text.length > 1000 || text.indexOf("\n") > -1) { input.value = this$1.prevInput = "" }
-	      else { this$1.prevInput = text }
-
-	      if (this$1.composing) {
-	        this$1.composing.range.clear()
-	        this$1.composing.range = cm.markText(this$1.composing.start, cm.getCursor("to"),
-	                                           {className: "CodeMirror-composing"})
+	      setLastCopied({lineWise: false, text: cm.getSelections()})
+	      if (input.inaccurateSelection) {
+	        input.prevInput = ""
+	        input.inaccurateSelection = false
+	        te.value = lastCopied.text.join("\n")
+	        selectInput(te)
 	      }
-	    })
-	    return true
-	  },
-
-	  ensurePolled: function() {
-	    if (this.pollingFast && this.poll()) { this.pollingFast = false }
-	  },
-
-	  onKeyPress: function() {
-	    if (ie && ie_version >= 9) { this.hasSelection = null }
-	    this.fastPoll()
-	  },
-
-	  onContextMenu: function(e) {
-	    var input = this, cm = input.cm, display = cm.display, te = input.textarea
-	    var pos = posFromMouse(cm, e), scrollPos = display.scroller.scrollTop
-	    if (!pos || presto) { return } // Opera is difficult.
-
-	    // Reset the current text selection only if the click is done outside of the selection
-	    // and 'resetSelectionOnContextMenu' option is true.
-	    var reset = cm.options.resetSelectionOnContextMenu
-	    if (reset && cm.doc.sel.contains(pos) == -1)
-	      { operation(cm, setSelection)(cm.doc, simpleSelection(pos), sel_dontScroll) }
-
-	    var oldCSS = te.style.cssText, oldWrapperCSS = input.wrapper.style.cssText
-	    input.wrapper.style.cssText = "position: absolute"
-	    var wrapperBox = input.wrapper.getBoundingClientRect()
-	    te.style.cssText = "position: absolute; width: 30px; height: 30px;\n      top: " + (e.clientY - wrapperBox.top - 5) + "px; left: " + (e.clientX - wrapperBox.left - 5) + "px;\n      z-index: 1000; background: " + (ie ? "rgba(255, 255, 255, .05)" : "transparent") + ";\n      outline: none; border-width: 0; outline: none; overflow: hidden; opacity: .05; filter: alpha(opacity=5);"
-	    var oldScrollY
-	    if (webkit) { oldScrollY = window.scrollY } // Work around Chrome issue (#2712)
-	    display.input.focus()
-	    if (webkit) { window.scrollTo(null, oldScrollY) }
-	    display.input.reset()
-	    // Adds "Select all" to context menu in FF
-	    if (!cm.somethingSelected()) { te.value = input.prevInput = " " }
-	    input.contextMenuPending = true
-	    display.selForContextMenu = cm.doc.sel
-	    clearTimeout(display.detectingSelectAll)
-
-	    // Select-all will be greyed out if there's nothing to select, so
-	    // this adds a zero-width space so that we can later check whether
-	    // it got selected.
-	    function prepareSelectAllHack() {
-	      if (te.selectionStart != null) {
-	        var selected = cm.somethingSelected()
-	        var extval = "\u200b" + (selected ? te.value : "")
-	        te.value = "\u21da" // Used to catch context-menu undo
-	        te.value = extval
-	        input.prevInput = selected ? "" : "\u200b"
-	        te.selectionStart = 1; te.selectionEnd = extval.length
-	        // Re-set this, in case some other handler touched the
-	        // selection in the meantime.
-	        display.selForContextMenu = cm.doc.sel
-	      }
-	    }
-	    function rehide() {
-	      input.contextMenuPending = false
-	      input.wrapper.style.cssText = oldWrapperCSS
-	      te.style.cssText = oldCSS
-	      if (ie && ie_version < 9) { display.scrollbars.setScrollTop(display.scroller.scrollTop = scrollPos) }
-
-	      // Try to detect the user choosing select-all
-	      if (te.selectionStart != null) {
-	        if (!ie || (ie && ie_version < 9)) { prepareSelectAllHack() }
-	        var i = 0, poll = function () {
-	          if (display.selForContextMenu == cm.doc.sel && te.selectionStart == 0 &&
-	              te.selectionEnd > 0 && input.prevInput == "\u200b")
-	            { operation(cm, selectAll)(cm) }
-	          else if (i++ < 10) { display.detectingSelectAll = setTimeout(poll, 500) }
-	          else { display.input.reset() }
-	        }
-	        display.detectingSelectAll = setTimeout(poll, 200)
-	      }
-	    }
-
-	    if (ie && ie_version >= 9) { prepareSelectAllHack() }
-	    if (captureRightClick) {
-	      e_stop(e)
-	      var mouseup = function () {
-	        off(window, "mouseup", mouseup)
-	        setTimeout(rehide, 20)
-	      }
-	      on(window, "mouseup", mouseup)
+	    } else if (!cm.options.lineWiseCopyCut) {
+	      return
 	    } else {
-	      setTimeout(rehide, 50)
+	      var ranges = copyableRanges(cm)
+	      setLastCopied({lineWise: true, text: ranges.text})
+	      if (e.type == "cut") {
+	        cm.setSelections(ranges.ranges, null, sel_dontScroll)
+	      } else {
+	        input.prevInput = ""
+	        te.value = ranges.text.join("\n")
+	        selectInput(te)
+	      }
 	    }
-	  },
+	    if (e.type == "cut") { cm.state.cutIncoming = true }
+	  }
+	  on(te, "cut", prepareCopyCut)
+	  on(te, "copy", prepareCopyCut)
 
-	  readOnlyChanged: function(val) {
-	    if (!val) { this.reset() }
-	  },
+	  on(display.scroller, "paste", function (e) {
+	    if (eventInWidget(display, e) || signalDOMEvent(cm, e)) { return }
+	    cm.state.pasteIncoming = true
+	    input.focus()
+	  })
 
-	  setUneditable: nothing,
+	  // Prevent normal selection in the editor (we handle our own)
+	  on(display.lineSpace, "selectstart", function (e) {
+	    if (!eventInWidget(display, e)) { e_preventDefault(e) }
+	  })
 
-	  needsContentAttribute: false
-	}, TextareaInput.prototype)
+	  on(te, "compositionstart", function () {
+	    var start = cm.getCursor("from")
+	    if (input.composing) { input.composing.range.clear() }
+	    input.composing = {
+	      start: start,
+	      range: cm.markText(start, cm.getCursor("to"), {className: "CodeMirror-composing"})
+	    }
+	  })
+	  on(te, "compositionend", function () {
+	    if (input.composing) {
+	      input.poll()
+	      input.composing.range.clear()
+	      input.composing = null
+	    }
+	  })
+	};
+
+	TextareaInput.prototype.prepareSelection = function () {
+	  // Redraw the selection and/or cursor
+	  var cm = this.cm, display = cm.display, doc = cm.doc
+	  var result = prepareSelection(cm)
+
+	  // Move the hidden textarea near the cursor to prevent scrolling artifacts
+	  if (cm.options.moveInputWithCursor) {
+	    var headPos = cursorCoords(cm, doc.sel.primary().head, "div")
+	    var wrapOff = display.wrapper.getBoundingClientRect(), lineOff = display.lineDiv.getBoundingClientRect()
+	    result.teTop = Math.max(0, Math.min(display.wrapper.clientHeight - 10,
+	                                        headPos.top + lineOff.top - wrapOff.top))
+	    result.teLeft = Math.max(0, Math.min(display.wrapper.clientWidth - 10,
+	                                         headPos.left + lineOff.left - wrapOff.left))
+	  }
+
+	  return result
+	};
+
+	TextareaInput.prototype.showSelection = function (drawn) {
+	  var cm = this.cm, display = cm.display
+	  removeChildrenAndAdd(display.cursorDiv, drawn.cursors)
+	  removeChildrenAndAdd(display.selectionDiv, drawn.selection)
+	  if (drawn.teTop != null) {
+	    this.wrapper.style.top = drawn.teTop + "px"
+	    this.wrapper.style.left = drawn.teLeft + "px"
+	  }
+	};
+
+	// Reset the input to correspond to the selection (or to be empty,
+	// when not typing and nothing is selected)
+	TextareaInput.prototype.reset = function (typing) {
+	  if (this.contextMenuPending) { return }
+	  var minimal, selected, cm = this.cm, doc = cm.doc
+	  if (cm.somethingSelected()) {
+	    this.prevInput = ""
+	    var range = doc.sel.primary()
+	    minimal = hasCopyEvent &&
+	      (range.to().line - range.from().line > 100 || (selected = cm.getSelection()).length > 1000)
+	    var content = minimal ? "-" : selected || cm.getSelection()
+	    this.textarea.value = content
+	    if (cm.state.focused) { selectInput(this.textarea) }
+	    if (ie && ie_version >= 9) { this.hasSelection = content }
+	  } else if (!typing) {
+	    this.prevInput = this.textarea.value = ""
+	    if (ie && ie_version >= 9) { this.hasSelection = null }
+	  }
+	  this.inaccurateSelection = minimal
+	};
+
+	TextareaInput.prototype.getField = function () { return this.textarea };
+
+	TextareaInput.prototype.supportsTouch = function () { return false };
+
+	TextareaInput.prototype.focus = function () {
+	  if (this.cm.options.readOnly != "nocursor" && (!mobile || activeElt() != this.textarea)) {
+	    try { this.textarea.focus() }
+	    catch (e) {} // IE8 will throw if the textarea is display: none or not in DOM
+	  }
+	};
+
+	TextareaInput.prototype.blur = function () { this.textarea.blur() };
+
+	TextareaInput.prototype.resetPosition = function () {
+	  this.wrapper.style.top = this.wrapper.style.left = 0
+	};
+
+	TextareaInput.prototype.receivedFocus = function () { this.slowPoll() };
+
+	// Poll for input changes, using the normal rate of polling. This
+	// runs as long as the editor is focused.
+	TextareaInput.prototype.slowPoll = function () {
+	    var this$1 = this;
+
+	  if (this.pollingFast) { return }
+	  this.polling.set(this.cm.options.pollInterval, function () {
+	    this$1.poll()
+	    if (this$1.cm.state.focused) { this$1.slowPoll() }
+	  })
+	};
+
+	// When an event has just come in that is likely to add or change
+	// something in the input textarea, we poll faster, to ensure that
+	// the change appears on the screen quickly.
+	TextareaInput.prototype.fastPoll = function () {
+	  var missed = false, input = this
+	  input.pollingFast = true
+	  function p() {
+	    var changed = input.poll()
+	    if (!changed && !missed) {missed = true; input.polling.set(60, p)}
+	    else {input.pollingFast = false; input.slowPoll()}
+	  }
+	  input.polling.set(20, p)
+	};
+
+	// Read input from the textarea, and update the document to match.
+	// When something is selected, it is present in the textarea, and
+	// selected (unless it is huge, in which case a placeholder is
+	// used). When nothing is selected, the cursor sits after previously
+	// seen text (can be empty), which is stored in prevInput (we must
+	// not reset the textarea when typing, because that breaks IME).
+	TextareaInput.prototype.poll = function () {
+	    var this$1 = this;
+
+	  var cm = this.cm, input = this.textarea, prevInput = this.prevInput
+	  // Since this is called a *lot*, try to bail out as cheaply as
+	  // possible when it is clear that nothing happened. hasSelection
+	  // will be the case when there is a lot of text in the textarea,
+	  // in which case reading its value would be expensive.
+	  if (this.contextMenuPending || !cm.state.focused ||
+	      (hasSelection(input) && !prevInput && !this.composing) ||
+	      cm.isReadOnly() || cm.options.disableInput || cm.state.keySeq)
+	    { return false }
+
+	  var text = input.value
+	  // If nothing changed, bail.
+	  if (text == prevInput && !cm.somethingSelected()) { return false }
+	  // Work around nonsensical selection resetting in IE9/10, and
+	  // inexplicable appearance of private area unicode characters on
+	  // some key combos in Mac (#2689).
+	  if (ie && ie_version >= 9 && this.hasSelection === text ||
+	      mac && /[\uf700-\uf7ff]/.test(text)) {
+	    cm.display.input.reset()
+	    return false
+	  }
+
+	  if (cm.doc.sel == cm.display.selForContextMenu) {
+	    var first = text.charCodeAt(0)
+	    if (first == 0x200b && !prevInput) { prevInput = "\u200b" }
+	    if (first == 0x21da) { this.reset(); return this.cm.execCommand("undo") }
+	  }
+	  // Find the part of the input that is actually new
+	  var same = 0, l = Math.min(prevInput.length, text.length)
+	  while (same < l && prevInput.charCodeAt(same) == text.charCodeAt(same)) { ++same }
+
+	  runInOp(cm, function () {
+	    applyTextInput(cm, text.slice(same), prevInput.length - same,
+	                   null, this$1.composing ? "*compose" : null)
+
+	    // Don't leave long text in the textarea, since it makes further polling slow
+	    if (text.length > 1000 || text.indexOf("\n") > -1) { input.value = this$1.prevInput = "" }
+	    else { this$1.prevInput = text }
+
+	    if (this$1.composing) {
+	      this$1.composing.range.clear()
+	      this$1.composing.range = cm.markText(this$1.composing.start, cm.getCursor("to"),
+	                                         {className: "CodeMirror-composing"})
+	    }
+	  })
+	  return true
+	};
+
+	TextareaInput.prototype.ensurePolled = function () {
+	  if (this.pollingFast && this.poll()) { this.pollingFast = false }
+	};
+
+	TextareaInput.prototype.onKeyPress = function () {
+	  if (ie && ie_version >= 9) { this.hasSelection = null }
+	  this.fastPoll()
+	};
+
+	TextareaInput.prototype.onContextMenu = function (e) {
+	  var input = this, cm = input.cm, display = cm.display, te = input.textarea
+	  var pos = posFromMouse(cm, e), scrollPos = display.scroller.scrollTop
+	  if (!pos || presto) { return } // Opera is difficult.
+
+	  // Reset the current text selection only if the click is done outside of the selection
+	  // and 'resetSelectionOnContextMenu' option is true.
+	  var reset = cm.options.resetSelectionOnContextMenu
+	  if (reset && cm.doc.sel.contains(pos) == -1)
+	    { operation(cm, setSelection)(cm.doc, simpleSelection(pos), sel_dontScroll) }
+
+	  var oldCSS = te.style.cssText, oldWrapperCSS = input.wrapper.style.cssText
+	  input.wrapper.style.cssText = "position: absolute"
+	  var wrapperBox = input.wrapper.getBoundingClientRect()
+	  te.style.cssText = "position: absolute; width: 30px; height: 30px;\n      top: " + (e.clientY - wrapperBox.top - 5) + "px; left: " + (e.clientX - wrapperBox.left - 5) + "px;\n      z-index: 1000; background: " + (ie ? "rgba(255, 255, 255, .05)" : "transparent") + ";\n      outline: none; border-width: 0; outline: none; overflow: hidden; opacity: .05; filter: alpha(opacity=5);"
+	  var oldScrollY
+	  if (webkit) { oldScrollY = window.scrollY } // Work around Chrome issue (#2712)
+	  display.input.focus()
+	  if (webkit) { window.scrollTo(null, oldScrollY) }
+	  display.input.reset()
+	  // Adds "Select all" to context menu in FF
+	  if (!cm.somethingSelected()) { te.value = input.prevInput = " " }
+	  input.contextMenuPending = true
+	  display.selForContextMenu = cm.doc.sel
+	  clearTimeout(display.detectingSelectAll)
+
+	  // Select-all will be greyed out if there's nothing to select, so
+	  // this adds a zero-width space so that we can later check whether
+	  // it got selected.
+	  function prepareSelectAllHack() {
+	    if (te.selectionStart != null) {
+	      var selected = cm.somethingSelected()
+	      var extval = "\u200b" + (selected ? te.value : "")
+	      te.value = "\u21da" // Used to catch context-menu undo
+	      te.value = extval
+	      input.prevInput = selected ? "" : "\u200b"
+	      te.selectionStart = 1; te.selectionEnd = extval.length
+	      // Re-set this, in case some other handler touched the
+	      // selection in the meantime.
+	      display.selForContextMenu = cm.doc.sel
+	    }
+	  }
+	  function rehide() {
+	    input.contextMenuPending = false
+	    input.wrapper.style.cssText = oldWrapperCSS
+	    te.style.cssText = oldCSS
+	    if (ie && ie_version < 9) { display.scrollbars.setScrollTop(display.scroller.scrollTop = scrollPos) }
+
+	    // Try to detect the user choosing select-all
+	    if (te.selectionStart != null) {
+	      if (!ie || (ie && ie_version < 9)) { prepareSelectAllHack() }
+	      var i = 0, poll = function () {
+	        if (display.selForContextMenu == cm.doc.sel && te.selectionStart == 0 &&
+	            te.selectionEnd > 0 && input.prevInput == "\u200b")
+	          { operation(cm, selectAll)(cm) }
+	        else if (i++ < 10) { display.detectingSelectAll = setTimeout(poll, 500) }
+	        else { display.input.reset() }
+	      }
+	      display.detectingSelectAll = setTimeout(poll, 200)
+	    }
+	  }
+
+	  if (ie && ie_version >= 9) { prepareSelectAllHack() }
+	  if (captureRightClick) {
+	    e_stop(e)
+	    var mouseup = function () {
+	      off(window, "mouseup", mouseup)
+	      setTimeout(rehide, 20)
+	    }
+	    on(window, "mouseup", mouseup)
+	  } else {
+	    setTimeout(rehide, 50)
+	  }
+	};
+
+	TextareaInput.prototype.readOnlyChanged = function (val) {
+	  if (!val) { this.reset() }
+	};
+
+	TextareaInput.prototype.setUneditable = function () {};
+
+	TextareaInput.prototype.needsContentAttribute = false
 
 	function fromTextArea(textarea, options) {
 	  options = options ? copyObj(options) : {}
@@ -9214,7 +9217,7 @@
 
 	addLegacyProps(CodeMirror)
 
-	CodeMirror.version = "5.21.0"
+	CodeMirror.version = "5.22.0"
 
 	return CodeMirror;
 
@@ -12564,7 +12567,7 @@
 	"use strict";
 
 	function expressionAllowed(stream, state, backUp) {
-	  return /^(?:operator|sof|keyword c|case|new|[\[{}\(,;:]|=>)$/.test(state.lastType) ||
+	  return /^(?:operator|sof|keyword c|case|new|export|default|[\[{}\(,;:]|=>)$/.test(state.lastType) ||
 	    (state.lastType == "quasi" && /\{\s*$/.test(stream.string.slice(0, stream.pos - (backUp || 0))))
 	}
 
@@ -12698,7 +12701,8 @@
 	      stream.skipToEnd();
 	      return ret("error", "error");
 	    } else if (isOperatorChar.test(ch)) {
-	      stream.eatWhile(isOperatorChar);
+	      if (ch != ">" || !state.lexical || state.lexical.type != ">")
+	        stream.eatWhile(isOperatorChar);
 	      return ret("operator", "operator", stream.current());
 	    } else if (wordRE.test(ch)) {
 	      stream.eatWhile(wordRE);
@@ -13091,6 +13095,7 @@
 	  }
 	  function typeexpr(type) {
 	    if (type == "variable") {cx.marked = "variable-3"; return cont(afterType);}
+	    if (type == "string" || type == "number" || type == "atom") return cont(afterType);
 	    if (type == "{") return cont(commasep(typeprop, "}"))
 	    if (type == "(") return cont(commasep(typearg, ")"), maybeReturnType)
 	  }
@@ -13110,7 +13115,8 @@
 	    else if (type == ":") return cont(typeexpr)
 	  }
 	  function afterType(type, value) {
-	    if (value == "<") return cont(commasep(typeexpr, ">"), afterType)
+	    if (value == "<") return cont(pushlex(">"), commasep(typeexpr, ">"), poplex, afterType)
+	    if (value == "|" || type == ".") return cont(typeexpr)
 	    if (type == "[") return cont(expect("]"), afterType)
 	  }
 	  function vardef() {
@@ -13207,20 +13213,28 @@
 	    if (type == ":") return cont(typeexpr, maybeAssign)
 	    return pass(functiondef)
 	  }
-	  function afterExport(_type, value) {
+	  function afterExport(type, value) {
 	    if (value == "*") { cx.marked = "keyword"; return cont(maybeFrom, expect(";")); }
 	    if (value == "default") { cx.marked = "keyword"; return cont(expression, expect(";")); }
+	    if (type == "{") return cont(commasep(exportField, "}"), maybeFrom, expect(";"));
 	    return pass(statement);
+	  }
+	  function exportField(type, value) {
+	    if (value == "as") { cx.marked = "keyword"; return cont(expect("variable")); }
+	    if (type == "variable") return pass(expressionNoComma, exportField);
 	  }
 	  function afterImport(type) {
 	    if (type == "string") return cont();
-	    return pass(importSpec, maybeFrom);
+	    return pass(importSpec, maybeMoreImports, maybeFrom);
 	  }
 	  function importSpec(type, value) {
 	    if (type == "{") return contCommasep(importSpec, "}");
 	    if (type == "variable") register(value);
 	    if (value == "*") cx.marked = "keyword";
 	    return cont(maybeAs);
+	  }
+	  function maybeMoreImports(type) {
+	    if (type == ",") return cont(importSpec, maybeMoreImports)
 	  }
 	  function maybeAs(_type, value) {
 	    if (value == "as") { cx.marked = "keyword"; return cont(importSpec); }
@@ -14210,8 +14224,13 @@
 	    innerMode: function(state) { return {state: state.base, mode: base}; },
 
 	    blankLine: function(state) {
-	      if (base.blankLine) base.blankLine(state.base);
-	      if (overlay.blankLine) overlay.blankLine(state.overlay);
+	      var baseToken, overlayToken;
+	      if (base.blankLine) baseToken = base.blankLine(state.base);
+	      if (overlay.blankLine) overlayToken = overlay.blankLine(state.overlay);
+
+	      return overlayToken == null ?
+	        baseToken :
+	        (combine && baseToken != null ? baseToken + " " + overlayToken : overlayToken);
 	    }
 	  };
 	};
@@ -16425,7 +16444,7 @@
 	    "transition-property", "transition-timing-function", "unicode-bidi",
 	    "user-select", "vertical-align", "visibility", "voice-balance", "voice-duration",
 	    "voice-family", "voice-pitch", "voice-range", "voice-rate", "voice-stress",
-	    "voice-volume", "volume", "white-space", "widows", "width", "word-break",
+	    "voice-volume", "volume", "white-space", "widows", "width", "will-change", "word-break",
 	    "word-spacing", "word-wrap", "z-index",
 	    // SVG-specific
 	    "clip-path", "clip-rule", "mask", "enable-background", "filter", "flood-color",
@@ -16499,7 +16518,7 @@
 	    "cell", "center", "checkbox", "circle", "cjk-decimal", "cjk-earthly-branch",
 	    "cjk-heavenly-stem", "cjk-ideographic", "clear", "clip", "close-quote",
 	    "col-resize", "collapse", "color", "color-burn", "color-dodge", "column", "column-reverse",
-	    "compact", "condensed", "contain", "content",
+	    "compact", "condensed", "contain", "content", "contents",
 	    "content-box", "context-menu", "continuous", "copy", "counter", "counters", "cover", "crop",
 	    "cross", "crosshair", "currentcolor", "cursive", "cyclic", "darken", "dashed", "decimal",
 	    "decimal-leading-zero", "default", "default-button", "dense", "destination-atop",
@@ -16542,7 +16561,7 @@
 	    "mix", "mongolian", "monospace", "move", "multiple", "multiply", "myanmar", "n-resize",
 	    "narrower", "ne-resize", "nesw-resize", "no-close-quote", "no-drop",
 	    "no-open-quote", "no-repeat", "none", "normal", "not-allowed", "nowrap",
-	    "ns-resize", "numbers", "numeric", "nw-resize", "nwse-resize", "oblique", "octal", "open-quote",
+	    "ns-resize", "numbers", "numeric", "nw-resize", "nwse-resize", "oblique", "octal", "opacity", "open-quote",
 	    "optimizeLegibility", "optimizeSpeed", "oriya", "oromo", "outset",
 	    "outside", "outside-shape", "overlay", "overline", "padding", "padding-box",
 	    "painted", "page", "paused", "persian", "perspective", "plus-darker", "plus-lighter",
@@ -16554,7 +16573,7 @@
 	    "rgb", "rgba", "ridge", "right", "rotate", "rotate3d", "rotateX", "rotateY",
 	    "rotateZ", "round", "row", "row-resize", "row-reverse", "rtl", "run-in", "running",
 	    "s-resize", "sans-serif", "saturation", "scale", "scale3d", "scaleX", "scaleY", "scaleZ", "screen",
-	    "scroll", "scrollbar", "se-resize", "searchfield",
+	    "scroll", "scrollbar", "scroll-position", "se-resize", "searchfield",
 	    "searchfield-cancel-button", "searchfield-decoration",
 	    "searchfield-results-button", "searchfield-results-decoration",
 	    "semi-condensed", "semi-expanded", "separate", "serif", "show", "sidama",
@@ -16572,9 +16591,9 @@
 	    "thick", "thin", "threeddarkshadow", "threedface", "threedhighlight",
 	    "threedlightshadow", "threedshadow", "tibetan", "tigre", "tigrinya-er",
 	    "tigrinya-er-abegede", "tigrinya-et", "tigrinya-et-abegede", "to", "top",
-	    "trad-chinese-formal", "trad-chinese-informal",
+	    "trad-chinese-formal", "trad-chinese-informal", "transform",
 	    "translate", "translate3d", "translateX", "translateY", "translateZ",
-	    "transparent", "ultra-condensed", "ultra-expanded", "underline", "up",
+	    "transparent", "ultra-condensed", "ultra-expanded", "underline", "unset", "up",
 	    "upper-alpha", "upper-armenian", "upper-greek", "upper-hexadecimal",
 	    "upper-latin", "upper-norwegian", "upper-roman", "uppercase", "urdu", "url",
 	    "var", "vertical", "vertical-text", "visible", "visibleFill", "visiblePainted",
@@ -25322,7 +25341,7 @@
 	      return getType(state);
 	    }
 
-	    if (ch === '[' && state.imageMarker) {
+	    if (ch === '[' && state.imageMarker && stream.match(/[^\]]*\](\(.*?\)| ?\[.*?\])/, false)) {
 	      state.imageMarker = false;
 	      state.imageAltText = true
 	      if (modeCfg.highlightFormatting) state.formatting = "image";
@@ -25814,7 +25833,7 @@
 	    {name: "Python", mime: "text/x-python", mode: "python", ext: ["BUILD", "bzl", "py", "pyw"], file: /^(BUCK|BUILD)$/},
 	    {name: "Puppet", mime: "text/x-puppet", mode: "puppet", ext: ["pp"]},
 	    {name: "Q", mime: "text/x-q", mode: "q", ext: ["q"]},
-	    {name: "R", mime: "text/x-rsrc", mode: "r", ext: ["r"], alias: ["rscript"]},
+	    {name: "R", mime: "text/x-rsrc", mode: "r", ext: ["r", "R"], alias: ["rscript"]},
 	    {name: "reStructuredText", mime: "text/x-rst", mode: "rst", ext: ["rst"], alias: ["rst"]},
 	    {name: "RPM Changes", mime: "text/x-rpm-changes", mode: "rpm"},
 	    {name: "RPM Spec", mime: "text/x-rpm-spec", mode: "rpm", ext: ["spec"]},
@@ -28273,11 +28292,11 @@
 	  var documentTypes_ = ["domain", "regexp", "url", "url-prefix"];
 	  var mediaTypes_ = ["all","aural","braille","handheld","print","projection","screen","tty","tv","embossed"];
 	  var mediaFeatures_ = ["width","min-width","max-width","height","min-height","max-height","device-width","min-device-width","max-device-width","device-height","min-device-height","max-device-height","aspect-ratio","min-aspect-ratio","max-aspect-ratio","device-aspect-ratio","min-device-aspect-ratio","max-device-aspect-ratio","color","min-color","max-color","color-index","min-color-index","max-color-index","monochrome","min-monochrome","max-monochrome","resolution","min-resolution","max-resolution","scan","grid"];
-	  var propertyKeywords_ = ["align-content","align-items","align-self","alignment-adjust","alignment-baseline","anchor-point","animation","animation-delay","animation-direction","animation-duration","animation-fill-mode","animation-iteration-count","animation-name","animation-play-state","animation-timing-function","appearance","azimuth","backface-visibility","background","background-attachment","background-clip","background-color","background-image","background-origin","background-position","background-repeat","background-size","baseline-shift","binding","bleed","bookmark-label","bookmark-level","bookmark-state","bookmark-target","border","border-bottom","border-bottom-color","border-bottom-left-radius","border-bottom-right-radius","border-bottom-style","border-bottom-width","border-collapse","border-color","border-image","border-image-outset","border-image-repeat","border-image-slice","border-image-source","border-image-width","border-left","border-left-color","border-left-style","border-left-width","border-radius","border-right","border-right-color","border-right-style","border-right-width","border-spacing","border-style","border-top","border-top-color","border-top-left-radius","border-top-right-radius","border-top-style","border-top-width","border-width","bottom","box-decoration-break","box-shadow","box-sizing","break-after","break-before","break-inside","caption-side","clear","clip","color","color-profile","column-count","column-fill","column-gap","column-rule","column-rule-color","column-rule-style","column-rule-width","column-span","column-width","columns","content","counter-increment","counter-reset","crop","cue","cue-after","cue-before","cursor","direction","display","dominant-baseline","drop-initial-after-adjust","drop-initial-after-align","drop-initial-before-adjust","drop-initial-before-align","drop-initial-size","drop-initial-value","elevation","empty-cells","fit","fit-position","flex","flex-basis","flex-direction","flex-flow","flex-grow","flex-shrink","flex-wrap","float","float-offset","flow-from","flow-into","font","font-feature-settings","font-family","font-kerning","font-language-override","font-size","font-size-adjust","font-stretch","font-style","font-synthesis","font-variant","font-variant-alternates","font-variant-caps","font-variant-east-asian","font-variant-ligatures","font-variant-numeric","font-variant-position","font-weight","grid","grid-area","grid-auto-columns","grid-auto-flow","grid-auto-position","grid-auto-rows","grid-column","grid-column-end","grid-column-start","grid-row","grid-row-end","grid-row-start","grid-template","grid-template-areas","grid-template-columns","grid-template-rows","hanging-punctuation","height","hyphens","icon","image-orientation","image-rendering","image-resolution","inline-box-align","justify-content","left","letter-spacing","line-break","line-height","line-stacking","line-stacking-ruby","line-stacking-shift","line-stacking-strategy","list-style","list-style-image","list-style-position","list-style-type","margin","margin-bottom","margin-left","margin-right","margin-top","marker-offset","marks","marquee-direction","marquee-loop","marquee-play-count","marquee-speed","marquee-style","max-height","max-width","min-height","min-width","move-to","nav-down","nav-index","nav-left","nav-right","nav-up","object-fit","object-position","opacity","order","orphans","outline","outline-color","outline-offset","outline-style","outline-width","overflow","overflow-style","overflow-wrap","overflow-x","overflow-y","padding","padding-bottom","padding-left","padding-right","padding-top","page","page-break-after","page-break-before","page-break-inside","page-policy","pause","pause-after","pause-before","perspective","perspective-origin","pitch","pitch-range","play-during","position","presentation-level","punctuation-trim","quotes","region-break-after","region-break-before","region-break-inside","region-fragment","rendering-intent","resize","rest","rest-after","rest-before","richness","right","rotation","rotation-point","ruby-align","ruby-overhang","ruby-position","ruby-span","shape-image-threshold","shape-inside","shape-margin","shape-outside","size","speak","speak-as","speak-header","speak-numeral","speak-punctuation","speech-rate","stress","string-set","tab-size","table-layout","target","target-name","target-new","target-position","text-align","text-align-last","text-decoration","text-decoration-color","text-decoration-line","text-decoration-skip","text-decoration-style","text-emphasis","text-emphasis-color","text-emphasis-position","text-emphasis-style","text-height","text-indent","text-justify","text-outline","text-overflow","text-shadow","text-size-adjust","text-space-collapse","text-transform","text-underline-position","text-wrap","top","transform","transform-origin","transform-style","transition","transition-delay","transition-duration","transition-property","transition-timing-function","unicode-bidi","vertical-align","visibility","voice-balance","voice-duration","voice-family","voice-pitch","voice-range","voice-rate","voice-stress","voice-volume","volume","white-space","widows","width","word-break","word-spacing","word-wrap","z-index","clip-path","clip-rule","mask","enable-background","filter","flood-color","flood-opacity","lighting-color","stop-color","stop-opacity","pointer-events","color-interpolation","color-interpolation-filters","color-rendering","fill","fill-opacity","fill-rule","image-rendering","marker","marker-end","marker-mid","marker-start","shape-rendering","stroke","stroke-dasharray","stroke-dashoffset","stroke-linecap","stroke-linejoin","stroke-miterlimit","stroke-opacity","stroke-width","text-rendering","baseline-shift","dominant-baseline","glyph-orientation-horizontal","glyph-orientation-vertical","text-anchor","writing-mode","font-smoothing","osx-font-smoothing"];
+	  var propertyKeywords_ = ["align-content","align-items","align-self","alignment-adjust","alignment-baseline","anchor-point","animation","animation-delay","animation-direction","animation-duration","animation-fill-mode","animation-iteration-count","animation-name","animation-play-state","animation-timing-function","appearance","azimuth","backface-visibility","background","background-attachment","background-clip","background-color","background-image","background-origin","background-position","background-repeat","background-size","baseline-shift","binding","bleed","bookmark-label","bookmark-level","bookmark-state","bookmark-target","border","border-bottom","border-bottom-color","border-bottom-left-radius","border-bottom-right-radius","border-bottom-style","border-bottom-width","border-collapse","border-color","border-image","border-image-outset","border-image-repeat","border-image-slice","border-image-source","border-image-width","border-left","border-left-color","border-left-style","border-left-width","border-radius","border-right","border-right-color","border-right-style","border-right-width","border-spacing","border-style","border-top","border-top-color","border-top-left-radius","border-top-right-radius","border-top-style","border-top-width","border-width","bottom","box-decoration-break","box-shadow","box-sizing","break-after","break-before","break-inside","caption-side","clear","clip","color","color-profile","column-count","column-fill","column-gap","column-rule","column-rule-color","column-rule-style","column-rule-width","column-span","column-width","columns","content","counter-increment","counter-reset","crop","cue","cue-after","cue-before","cursor","direction","display","dominant-baseline","drop-initial-after-adjust","drop-initial-after-align","drop-initial-before-adjust","drop-initial-before-align","drop-initial-size","drop-initial-value","elevation","empty-cells","fit","fit-position","flex","flex-basis","flex-direction","flex-flow","flex-grow","flex-shrink","flex-wrap","float","float-offset","flow-from","flow-into","font","font-feature-settings","font-family","font-kerning","font-language-override","font-size","font-size-adjust","font-stretch","font-style","font-synthesis","font-variant","font-variant-alternates","font-variant-caps","font-variant-east-asian","font-variant-ligatures","font-variant-numeric","font-variant-position","font-weight","grid","grid-area","grid-auto-columns","grid-auto-flow","grid-auto-position","grid-auto-rows","grid-column","grid-column-end","grid-column-start","grid-row","grid-row-end","grid-row-start","grid-template","grid-template-areas","grid-template-columns","grid-template-rows","hanging-punctuation","height","hyphens","icon","image-orientation","image-rendering","image-resolution","inline-box-align","justify-content","left","letter-spacing","line-break","line-height","line-stacking","line-stacking-ruby","line-stacking-shift","line-stacking-strategy","list-style","list-style-image","list-style-position","list-style-type","margin","margin-bottom","margin-left","margin-right","margin-top","marker-offset","marks","marquee-direction","marquee-loop","marquee-play-count","marquee-speed","marquee-style","max-height","max-width","min-height","min-width","move-to","nav-down","nav-index","nav-left","nav-right","nav-up","object-fit","object-position","opacity","order","orphans","outline","outline-color","outline-offset","outline-style","outline-width","overflow","overflow-style","overflow-wrap","overflow-x","overflow-y","padding","padding-bottom","padding-left","padding-right","padding-top","page","page-break-after","page-break-before","page-break-inside","page-policy","pause","pause-after","pause-before","perspective","perspective-origin","pitch","pitch-range","play-during","position","presentation-level","punctuation-trim","quotes","region-break-after","region-break-before","region-break-inside","region-fragment","rendering-intent","resize","rest","rest-after","rest-before","richness","right","rotation","rotation-point","ruby-align","ruby-overhang","ruby-position","ruby-span","shape-image-threshold","shape-inside","shape-margin","shape-outside","size","speak","speak-as","speak-header","speak-numeral","speak-punctuation","speech-rate","stress","string-set","tab-size","table-layout","target","target-name","target-new","target-position","text-align","text-align-last","text-decoration","text-decoration-color","text-decoration-line","text-decoration-skip","text-decoration-style","text-emphasis","text-emphasis-color","text-emphasis-position","text-emphasis-style","text-height","text-indent","text-justify","text-outline","text-overflow","text-shadow","text-size-adjust","text-space-collapse","text-transform","text-underline-position","text-wrap","top","transform","transform-origin","transform-style","transition","transition-delay","transition-duration","transition-property","transition-timing-function","unicode-bidi","vertical-align","visibility","voice-balance","voice-duration","voice-family","voice-pitch","voice-range","voice-rate","voice-stress","voice-volume","volume","white-space","widows","width","will-change","word-break","word-spacing","word-wrap","z-index","clip-path","clip-rule","mask","enable-background","filter","flood-color","flood-opacity","lighting-color","stop-color","stop-opacity","pointer-events","color-interpolation","color-interpolation-filters","color-rendering","fill","fill-opacity","fill-rule","image-rendering","marker","marker-end","marker-mid","marker-start","shape-rendering","stroke","stroke-dasharray","stroke-dashoffset","stroke-linecap","stroke-linejoin","stroke-miterlimit","stroke-opacity","stroke-width","text-rendering","baseline-shift","dominant-baseline","glyph-orientation-horizontal","glyph-orientation-vertical","text-anchor","writing-mode","font-smoothing","osx-font-smoothing"];
 	  var nonStandardPropertyKeywords_ = ["scrollbar-arrow-color","scrollbar-base-color","scrollbar-dark-shadow-color","scrollbar-face-color","scrollbar-highlight-color","scrollbar-shadow-color","scrollbar-3d-light-color","scrollbar-track-color","shape-inside","searchfield-cancel-button","searchfield-decoration","searchfield-results-button","searchfield-results-decoration","zoom"];
 	  var fontProperties_ = ["font-family","src","unicode-range","font-variant","font-feature-settings","font-stretch","font-weight","font-style"];
 	  var colorKeywords_ = ["aliceblue","antiquewhite","aqua","aquamarine","azure","beige","bisque","black","blanchedalmond","blue","blueviolet","brown","burlywood","cadetblue","chartreuse","chocolate","coral","cornflowerblue","cornsilk","crimson","cyan","darkblue","darkcyan","darkgoldenrod","darkgray","darkgreen","darkkhaki","darkmagenta","darkolivegreen","darkorange","darkorchid","darkred","darksalmon","darkseagreen","darkslateblue","darkslategray","darkturquoise","darkviolet","deeppink","deepskyblue","dimgray","dodgerblue","firebrick","floralwhite","forestgreen","fuchsia","gainsboro","ghostwhite","gold","goldenrod","gray","grey","green","greenyellow","honeydew","hotpink","indianred","indigo","ivory","khaki","lavender","lavenderblush","lawngreen","lemonchiffon","lightblue","lightcoral","lightcyan","lightgoldenrodyellow","lightgray","lightgreen","lightpink","lightsalmon","lightseagreen","lightskyblue","lightslategray","lightsteelblue","lightyellow","lime","limegreen","linen","magenta","maroon","mediumaquamarine","mediumblue","mediumorchid","mediumpurple","mediumseagreen","mediumslateblue","mediumspringgreen","mediumturquoise","mediumvioletred","midnightblue","mintcream","mistyrose","moccasin","navajowhite","navy","oldlace","olive","olivedrab","orange","orangered","orchid","palegoldenrod","palegreen","paleturquoise","palevioletred","papayawhip","peachpuff","peru","pink","plum","powderblue","purple","rebeccapurple","red","rosybrown","royalblue","saddlebrown","salmon","sandybrown","seagreen","seashell","sienna","silver","skyblue","slateblue","slategray","snow","springgreen","steelblue","tan","teal","thistle","tomato","turquoise","violet","wheat","white","whitesmoke","yellow","yellowgreen"];
-	  var valueKeywords_ = ["above","absolute","activeborder","additive","activecaption","afar","after-white-space","ahead","alias","all","all-scroll","alphabetic","alternate","always","amharic","amharic-abegede","antialiased","appworkspace","arabic-indic","armenian","asterisks","attr","auto","avoid","avoid-column","avoid-page","avoid-region","background","backwards","baseline","below","bidi-override","binary","bengali","blink","block","block-axis","bold","bolder","border","border-box","both","bottom","break","break-all","break-word","bullets","button","button-bevel","buttonface","buttonhighlight","buttonshadow","buttontext","calc","cambodian","capitalize","caps-lock-indicator","caption","captiontext","caret","cell","center","checkbox","circle","cjk-decimal","cjk-earthly-branch","cjk-heavenly-stem","cjk-ideographic","clear","clip","close-quote","col-resize","collapse","column","compact","condensed","contain","content","content-box","context-menu","continuous","copy","counter","counters","cover","crop","cross","crosshair","currentcolor","cursive","cyclic","dashed","decimal","decimal-leading-zero","default","default-button","destination-atop","destination-in","destination-out","destination-over","devanagari","disc","discard","disclosure-closed","disclosure-open","document","dot-dash","dot-dot-dash","dotted","double","down","e-resize","ease","ease-in","ease-in-out","ease-out","element","ellipse","ellipsis","embed","end","ethiopic","ethiopic-abegede","ethiopic-abegede-am-et","ethiopic-abegede-gez","ethiopic-abegede-ti-er","ethiopic-abegede-ti-et","ethiopic-halehame-aa-er","ethiopic-halehame-aa-et","ethiopic-halehame-am-et","ethiopic-halehame-gez","ethiopic-halehame-om-et","ethiopic-halehame-sid-et","ethiopic-halehame-so-et","ethiopic-halehame-ti-er","ethiopic-halehame-ti-et","ethiopic-halehame-tig","ethiopic-numeric","ew-resize","expanded","extends","extra-condensed","extra-expanded","fantasy","fast","fill","fixed","flat","flex","footnotes","forwards","from","geometricPrecision","georgian","graytext","groove","gujarati","gurmukhi","hand","hangul","hangul-consonant","hebrew","help","hidden","hide","higher","highlight","highlighttext","hiragana","hiragana-iroha","horizontal","hsl","hsla","icon","ignore","inactiveborder","inactivecaption","inactivecaptiontext","infinite","infobackground","infotext","inherit","initial","inline","inline-axis","inline-block","inline-flex","inline-table","inset","inside","intrinsic","invert","italic","japanese-formal","japanese-informal","justify","kannada","katakana","katakana-iroha","keep-all","khmer","korean-hangul-formal","korean-hanja-formal","korean-hanja-informal","landscape","lao","large","larger","left","level","lighter","line-through","linear","linear-gradient","lines","list-item","listbox","listitem","local","logical","loud","lower","lower-alpha","lower-armenian","lower-greek","lower-hexadecimal","lower-latin","lower-norwegian","lower-roman","lowercase","ltr","malayalam","match","matrix","matrix3d","media-controls-background","media-current-time-display","media-fullscreen-button","media-mute-button","media-play-button","media-return-to-realtime-button","media-rewind-button","media-seek-back-button","media-seek-forward-button","media-slider","media-sliderthumb","media-time-remaining-display","media-volume-slider","media-volume-slider-container","media-volume-sliderthumb","medium","menu","menulist","menulist-button","menulist-text","menulist-textfield","menutext","message-box","middle","min-intrinsic","mix","mongolian","monospace","move","multiple","myanmar","n-resize","narrower","ne-resize","nesw-resize","no-close-quote","no-drop","no-open-quote","no-repeat","none","normal","not-allowed","nowrap","ns-resize","numbers","numeric","nw-resize","nwse-resize","oblique","octal","open-quote","optimizeLegibility","optimizeSpeed","oriya","oromo","outset","outside","outside-shape","overlay","overline","padding","padding-box","painted","page","paused","persian","perspective","plus-darker","plus-lighter","pointer","polygon","portrait","pre","pre-line","pre-wrap","preserve-3d","progress","push-button","radial-gradient","radio","read-only","read-write","read-write-plaintext-only","rectangle","region","relative","repeat","repeating-linear-gradient","repeating-radial-gradient","repeat-x","repeat-y","reset","reverse","rgb","rgba","ridge","right","rotate","rotate3d","rotateX","rotateY","rotateZ","round","row-resize","rtl","run-in","running","s-resize","sans-serif","scale","scale3d","scaleX","scaleY","scaleZ","scroll","scrollbar","se-resize","searchfield","searchfield-cancel-button","searchfield-decoration","searchfield-results-button","searchfield-results-decoration","semi-condensed","semi-expanded","separate","serif","show","sidama","simp-chinese-formal","simp-chinese-informal","single","skew","skewX","skewY","skip-white-space","slide","slider-horizontal","slider-vertical","sliderthumb-horizontal","sliderthumb-vertical","slow","small","small-caps","small-caption","smaller","solid","somali","source-atop","source-in","source-out","source-over","space","spell-out","square","square-button","start","static","status-bar","stretch","stroke","sub","subpixel-antialiased","super","sw-resize","symbolic","symbols","table","table-caption","table-cell","table-column","table-column-group","table-footer-group","table-header-group","table-row","table-row-group","tamil","telugu","text","text-bottom","text-top","textarea","textfield","thai","thick","thin","threeddarkshadow","threedface","threedhighlight","threedlightshadow","threedshadow","tibetan","tigre","tigrinya-er","tigrinya-er-abegede","tigrinya-et","tigrinya-et-abegede","to","top","trad-chinese-formal","trad-chinese-informal","translate","translate3d","translateX","translateY","translateZ","transparent","ultra-condensed","ultra-expanded","underline","up","upper-alpha","upper-armenian","upper-greek","upper-hexadecimal","upper-latin","upper-norwegian","upper-roman","uppercase","urdu","url","var","vertical","vertical-text","visible","visibleFill","visiblePainted","visibleStroke","visual","w-resize","wait","wave","wider","window","windowframe","windowtext","words","x-large","x-small","xor","xx-large","xx-small","bicubic","optimizespeed","grayscale","row","row-reverse","wrap","wrap-reverse","column-reverse","flex-start","flex-end","space-between","space-around"];
+	  var valueKeywords_ = ["above","absolute","activeborder","additive","activecaption","afar","after-white-space","ahead","alias","all","all-scroll","alphabetic","alternate","always","amharic","amharic-abegede","antialiased","appworkspace","arabic-indic","armenian","asterisks","attr","auto","avoid","avoid-column","avoid-page","avoid-region","background","backwards","baseline","below","bidi-override","binary","bengali","blink","block","block-axis","bold","bolder","border","border-box","both","bottom","break","break-all","break-word","bullets","button","button-bevel","buttonface","buttonhighlight","buttonshadow","buttontext","calc","cambodian","capitalize","caps-lock-indicator","caption","captiontext","caret","cell","center","checkbox","circle","cjk-decimal","cjk-earthly-branch","cjk-heavenly-stem","cjk-ideographic","clear","clip","close-quote","col-resize","collapse","column","compact","condensed","contain","content","contents","content-box","context-menu","continuous","copy","counter","counters","cover","crop","cross","crosshair","currentcolor","cursive","cyclic","dashed","decimal","decimal-leading-zero","default","default-button","destination-atop","destination-in","destination-out","destination-over","devanagari","disc","discard","disclosure-closed","disclosure-open","document","dot-dash","dot-dot-dash","dotted","double","down","e-resize","ease","ease-in","ease-in-out","ease-out","element","ellipse","ellipsis","embed","end","ethiopic","ethiopic-abegede","ethiopic-abegede-am-et","ethiopic-abegede-gez","ethiopic-abegede-ti-er","ethiopic-abegede-ti-et","ethiopic-halehame-aa-er","ethiopic-halehame-aa-et","ethiopic-halehame-am-et","ethiopic-halehame-gez","ethiopic-halehame-om-et","ethiopic-halehame-sid-et","ethiopic-halehame-so-et","ethiopic-halehame-ti-er","ethiopic-halehame-ti-et","ethiopic-halehame-tig","ethiopic-numeric","ew-resize","expanded","extends","extra-condensed","extra-expanded","fantasy","fast","fill","fixed","flat","flex","footnotes","forwards","from","geometricPrecision","georgian","graytext","groove","gujarati","gurmukhi","hand","hangul","hangul-consonant","hebrew","help","hidden","hide","higher","highlight","highlighttext","hiragana","hiragana-iroha","horizontal","hsl","hsla","icon","ignore","inactiveborder","inactivecaption","inactivecaptiontext","infinite","infobackground","infotext","inherit","initial","inline","inline-axis","inline-block","inline-flex","inline-table","inset","inside","intrinsic","invert","italic","japanese-formal","japanese-informal","justify","kannada","katakana","katakana-iroha","keep-all","khmer","korean-hangul-formal","korean-hanja-formal","korean-hanja-informal","landscape","lao","large","larger","left","level","lighter","line-through","linear","linear-gradient","lines","list-item","listbox","listitem","local","logical","loud","lower","lower-alpha","lower-armenian","lower-greek","lower-hexadecimal","lower-latin","lower-norwegian","lower-roman","lowercase","ltr","malayalam","match","matrix","matrix3d","media-controls-background","media-current-time-display","media-fullscreen-button","media-mute-button","media-play-button","media-return-to-realtime-button","media-rewind-button","media-seek-back-button","media-seek-forward-button","media-slider","media-sliderthumb","media-time-remaining-display","media-volume-slider","media-volume-slider-container","media-volume-sliderthumb","medium","menu","menulist","menulist-button","menulist-text","menulist-textfield","menutext","message-box","middle","min-intrinsic","mix","mongolian","monospace","move","multiple","myanmar","n-resize","narrower","ne-resize","nesw-resize","no-close-quote","no-drop","no-open-quote","no-repeat","none","normal","not-allowed","nowrap","ns-resize","numbers","numeric","nw-resize","nwse-resize","oblique","octal","open-quote","optimizeLegibility","optimizeSpeed","oriya","oromo","outset","outside","outside-shape","overlay","overline","padding","padding-box","painted","page","paused","persian","perspective","plus-darker","plus-lighter","pointer","polygon","portrait","pre","pre-line","pre-wrap","preserve-3d","progress","push-button","radial-gradient","radio","read-only","read-write","read-write-plaintext-only","rectangle","region","relative","repeat","repeating-linear-gradient","repeating-radial-gradient","repeat-x","repeat-y","reset","reverse","rgb","rgba","ridge","right","rotate","rotate3d","rotateX","rotateY","rotateZ","round","row-resize","rtl","run-in","running","s-resize","sans-serif","scale","scale3d","scaleX","scaleY","scaleZ","scroll","scrollbar","scroll-position","se-resize","searchfield","searchfield-cancel-button","searchfield-decoration","searchfield-results-button","searchfield-results-decoration","semi-condensed","semi-expanded","separate","serif","show","sidama","simp-chinese-formal","simp-chinese-informal","single","skew","skewX","skewY","skip-white-space","slide","slider-horizontal","slider-vertical","sliderthumb-horizontal","sliderthumb-vertical","slow","small","small-caps","small-caption","smaller","solid","somali","source-atop","source-in","source-out","source-over","space","spell-out","square","square-button","start","static","status-bar","stretch","stroke","sub","subpixel-antialiased","super","sw-resize","symbolic","symbols","table","table-caption","table-cell","table-column","table-column-group","table-footer-group","table-header-group","table-row","table-row-group","tamil","telugu","text","text-bottom","text-top","textarea","textfield","thai","thick","thin","threeddarkshadow","threedface","threedhighlight","threedlightshadow","threedshadow","tibetan","tigre","tigrinya-er","tigrinya-er-abegede","tigrinya-et","tigrinya-et-abegede","to","top","trad-chinese-formal","trad-chinese-informal","translate","translate3d","translateX","translateY","translateZ","transparent","ultra-condensed","ultra-expanded","underline","up","upper-alpha","upper-armenian","upper-greek","upper-hexadecimal","upper-latin","upper-norwegian","upper-roman","uppercase","urdu","url","var","vertical","vertical-text","visible","visibleFill","visiblePainted","visibleStroke","visual","w-resize","wait","wave","wider","window","windowframe","windowtext","words","x-large","x-small","xor","xx-large","xx-small","bicubic","optimizespeed","grayscale","row","row-reverse","wrap","wrap-reverse","column-reverse","flex-start","flex-end","space-between","space-around", "unset"];
 
 	  var wordOperatorKeywords_ = ["in","and","or","not","is not","is a","is","isnt","defined","if unless"],
 	      blockKeywords_ = ["for","if","else","unless", "from", "to"],
@@ -38198,6 +38217,7 @@
 	__webpack_require__(387);
 	__webpack_require__(264);
 
+	var SerialPort = __webpack_require__(389).SerialPort;
 	function appState() {
 	  return _storesAppStoreJs2['default'].init();
 	}global.application = 'com.my_company.my_application';
@@ -38228,6 +38248,7 @@
 	    this.state = {
 	      serialPortsValue: '',
 	      serialPorts: [],
+	      watchingSerialPort: false,
 	      baudrateValue: '115200',
 	      filePathValue: './new_uploader/sample.bin'
 	    };
@@ -38276,6 +38297,10 @@
 	    value: function onDownloadFW() {
 	      _libLogJs2['default'].clear();
 
+	      if (this.state.serialPort) {
+	        this.state.serialPort.close();
+	      }
+
 	      global.port.postMessage({
 	        type: 'download',
 	        filePath: this.state.filePathValue,
@@ -38286,33 +38311,36 @@
 	    key: 'onScreenLog',
 	    value: function onScreenLog() {
 	      _libLogJs2['default'].clear();
+
+	      if (this.state.serialPort) {
+	        this.state.serialPort.close();
+	      }
+
 	      var _this = this;
 	      if (!global.serialPortConectionId) {
-	        var SerialPort = __webpack_require__(389).SerialPort;
-	        var serialPort = new SerialPort(_this.state.serialPortsValue, {
-	          baudrate: Number(_this.state.baudrateValue)
-	        });
-	        serialPort.on("open", function () {
-	          console.log('open');
-	          serialPort.on('data', function (data) {
-	            _libLogJs2['default'].parseSerialPorts(data);
-	            // console.log('data received: ' + data);
+	        (function () {
+	          var serialPort = new SerialPort(_this.state.serialPortsValue, {
+	            baudrate: Number(_this.state.baudrateValue)
 	          });
-	        });
+	          serialPort.on("open", function () {
+	            console.log('open');
+
+	            _this.setState({
+	              serialPort: serialPort
+	            });
+
+	            serialPort.on('data', function (data) {
+	              _libLogJs2['default'].parseSerialPorts(data);
+	            });
+
+	            serialPort.on('close', function () {
+	              _this.setState({
+	                serialPort: null
+	              });
+	            });
+	          });
+	        })();
 	      }
-	      // } else {
-	      //   console.log(chrome.serial)
-	      //   chrome.serial.getConnections(function(list) {
-	      //     console.log(list[0].connectionId);
-	      //     chrome.serial.onReceive.addListener(function(info) {
-	      //       if (info.connectionId === global.serialPortConectionId) {
-	      //         Log.parseSerialPorts(info.data);
-	      //       }
-	      //     });
-	      //   });
-	      //   // chrome.serial.close(global.serialPortConectionId);
-	      //   global.serialPortConectionId = null;
-	      // }
 	    }
 	  }, {
 	    key: '_onChange',
@@ -38547,12 +38575,10 @@
 	});
 
 	_dispatcherAppDispatcher2['default'].register(function (action) {
-	  console.log(action);
 	  if (action.log) {
 	    APP_PAGE.log = action.log;
 	    appStore.emitChange();
 	  } else if (action.progress) {
-	    console.log(1);
 	    APP_PAGE.progress = action.progress;
 	    appStore.emitChange();
 	  }
@@ -41851,12 +41877,6 @@
 	// CodeMirror, copyright (c) by Marijn Haverbeke and others
 	// Distributed under an MIT license: http://codemirror.net/LICENSE
 
-	// Because sometimes you need to style the cursor's line.
-	//
-	// Adds an option 'styleActiveLine' which, when enabled, gives the
-	// active line's wrapping <div> the CSS class "CodeMirror-activeline",
-	// and gives its background <div> the class "CodeMirror-activeline-background".
-
 	(function(mod) {
 	  if (true) // CommonJS
 	    mod(__webpack_require__(3));
@@ -41871,15 +41891,17 @@
 	  var GUTT_CLASS = "CodeMirror-activeline-gutter";
 
 	  CodeMirror.defineOption("styleActiveLine", false, function(cm, val, old) {
-	    var prev = old && old != CodeMirror.Init;
-	    if (val && !prev) {
-	      cm.state.activeLines = [];
-	      updateActiveLines(cm, cm.listSelections());
-	      cm.on("beforeSelectionChange", selectionChange);
-	    } else if (!val && prev) {
+	    var prev = old == CodeMirror.Init ? false : old;
+	    if (val == prev) return
+	    if (prev) {
 	      cm.off("beforeSelectionChange", selectionChange);
 	      clearActiveLines(cm);
 	      delete cm.state.activeLines;
+	    }
+	    if (val) {
+	      cm.state.activeLines = [];
+	      updateActiveLines(cm, cm.listSelections());
+	      cm.on("beforeSelectionChange", selectionChange);
 	    }
 	  });
 
@@ -41902,7 +41924,9 @@
 	    var active = [];
 	    for (var i = 0; i < ranges.length; i++) {
 	      var range = ranges[i];
-	      if (!range.empty()) continue;
+	      var option = cm.getOption("styleActiveLine");
+	      if (typeof option == "object" && option.nonEmpty ? range.anchor.line != range.head.line : !range.empty())
+	        continue
 	      var line = cm.getLineHandleVisualStart(range.head.line);
 	      if (active[active.length - 1] != line) active.push(line);
 	    }
@@ -42096,17 +42120,23 @@
 
 	  var mirror = "(){}[]";
 	  function selectBetweenBrackets(cm) {
-	    var pos = cm.getCursor(), opening = cm.scanForBracket(pos, -1);
-	    if (!opening) return;
-	    for (;;) {
-	      var closing = cm.scanForBracket(pos, 1);
-	      if (!closing) return;
-	      if (closing.ch == mirror.charAt(mirror.indexOf(opening.ch) + 1)) {
-	        cm.setSelection(Pos(opening.pos.line, opening.pos.ch + 1), closing.pos, false);
-	        return true;
+	    var ranges = cm.listSelections(), newRanges = []
+	    for (var i = 0; i < ranges.length; i++) {
+	      var range = ranges[i], pos = range.head, opening = cm.scanForBracket(pos, -1);
+	      if (!opening) return false;
+	      for (;;) {
+	        var closing = cm.scanForBracket(pos, 1);
+	        if (!closing) return false;
+	        if (closing.ch == mirror.charAt(mirror.indexOf(opening.ch) + 1)) {
+	          newRanges.push({anchor: Pos(opening.pos.line, opening.pos.ch + 1),
+	                          head: closing.pos});
+	          break;
+	        }
+	        pos = Pos(closing.pos.line, closing.pos.ch + 1);
 	      }
-	      pos = Pos(closing.pos.line, closing.pos.ch + 1);
 	    }
+	    cm.setSelections(newRanges);
+	    return true;
 	  }
 
 	  cmds[map["Shift-" + ctrl + "Space"] = "selectScope"] = function(cm) {
@@ -44145,6 +44175,7 @@
 	      else if (/\d/.test(ch) && stream.match(/^\d*#/)) return null;
 	      else if (ch == "|") return (state.tokenize = inComment)(stream, state);
 	      else if (ch == ":") { readSym(stream); return "meta"; }
+	      else if (ch == "\\") { stream.next(); readSym(stream); return "string-2" }
 	      else return "error";
 	    } else {
 	      var name = readSym(stream);
@@ -59298,12 +59329,40 @@
 	      return result;
 	    }
 
+	    function contains(list, element) {
+	      while (list) {
+	        if (list.element === element) return true;
+	        list = list.next;
+	      }
+	      return false;
+	    }
+
+	    function prepend(list, element) {
+	      return {
+	        element: element,
+	        next: list
+	      };
+	    }
+
+	    function pop(list) {
+	      return list && list.next;
+	    }
+
+	    // Reference a variable `name` in `list`.
+	    // Let `loose` be truthy to ignore missing identifiers.
+	    function ref(list, name, loose) {
+	      return contains(list, name) ? "variable-2" : (loose ? "variable" : "variable-2 error");
+	    }
+
 	    return {
 	      startState: function() {
 	        return {
 	          kind: [],
 	          kindTag: [],
 	          soyState: [],
+	          templates: null,
+	          variables: null,
+	          scopes: null,
 	          indent: 0,
 	          localMode: modes.html,
 	          localState: CodeMirror.startState(modes.html)
@@ -59316,6 +59375,9 @@
 	          kind: state.kind.concat([]), // Values of kind="" attributes.
 	          kindTag: state.kindTag.concat([]), // Opened tags with kind="" attributes.
 	          soyState: state.soyState.concat([]),
+	          templates: state.templates,
+	          variables: state.variables,
+	          scopes: state.scopes,
 	          indent: state.indent, // Indentation of the following line.
 	          localMode: state.localMode,
 	          localState: CodeMirror.copyState(state.localMode, state.localState)
@@ -59334,19 +59396,71 @@
 	            }
 	            return "comment";
 
-	          case "variable":
-	            if (stream.match(/^}/)) {
-	              state.indent -= 2 * config.indentUnit;
+	          case "templ-def":
+	            if (match = stream.match(/^\.?([\w]+(?!\.[\w]+)*)/)) {
+	              state.templates = prepend(state.templates, match[1]);
+	              state.scopes = prepend(state.scopes, state.variables);
 	              state.soyState.pop();
-	              return "variable-2";
+	              return "def";
+	            }
+	            stream.next();
+	            return null;
+
+	          case "templ-ref":
+	            if (match = stream.match(/^\.?([\w]+)/)) {
+	              state.soyState.pop();
+	              // If the first character is '.', try to match against a local template name.
+	              if (match[0][0] == '.') {
+	                return ref(state.templates, match[1], true);
+	              }
+	              // Otherwise
+	              return "variable";
+	            }
+	            stream.next();
+	            return null;
+
+	          case "param-def":
+	            if (match = stream.match(/^([\w]+)(?=:)/)) {
+	              state.variables = prepend(state.variables, match[1]);
+	              state.soyState.pop();
+	              state.soyState.push("param-type");
+	              return "def";
+	            }
+	            stream.next();
+	            return null;
+
+	          case "param-type":
+	            if (stream.peek() == "}") {
+	              state.soyState.pop();
+	              return null;
+	            }
+	            if (stream.eatWhile(/^[\w]+/)) {
+	              return "variable-3";
+	            }
+	            stream.next();
+	            return null;
+
+	          case "var-def":
+	            if (match = stream.match(/^\$([\w]+)/)) {
+	              state.variables = prepend(state.variables, match[1]);
+	              state.soyState.pop();
+	              return "def";
 	            }
 	            stream.next();
 	            return null;
 
 	          case "tag":
 	            if (stream.match(/^\/?}/)) {
-	              if (state.tag == "/template" || state.tag == "/deltemplate") state.indent = 0;
-	              else state.indent -= (stream.current() == "/}" || indentingTags.indexOf(state.tag) == -1 ? 2 : 1) * config.indentUnit;
+	              if (state.tag == "/template" || state.tag == "/deltemplate") {
+	                state.variables = state.scopes = pop(state.scopes);
+	                state.indent = 0;
+	              } else {
+	                if (state.tag == "/for" || state.tag == "/foreach") {
+	                  state.variables = state.scopes = pop(state.scopes);
+	                }
+	                state.indent -= config.indentUnit *
+	                    (stream.current() == "/}" || indentingTags.indexOf(state.tag) == -1 ? 2 : 1);
+	              }
 	              state.soyState.pop();
 	              return "keyword";
 	            } else if (stream.match(/^([\w?]+)(?==)/)) {
@@ -59361,6 +59475,12 @@
 	            } else if (stream.match(/^"/)) {
 	              state.soyState.push("string");
 	              return "string";
+	            }
+	            if (match = stream.match(/^\$([\w]+)/)) {
+	              return ref(state.variables, match[1]);
+	            }
+	            if (stream.match(/(?:as|and|or|not|in)/)) {
+	              return "keyword";
 	            }
 	            stream.next();
 	            return null;
@@ -59388,17 +59508,13 @@
 	          return "comment";
 	        } else if (stream.match(stream.sol() ? /^\s*\/\/.*/ : /^\s+\/\/.*/)) {
 	          return "comment";
-	        } else if (stream.match(/^\{\$[\w?]*/)) {
-	          state.indent += 2 * config.indentUnit;
-	          state.soyState.push("variable");
-	          return "variable-2";
 	        } else if (stream.match(/^\{literal}/)) {
 	          state.indent += config.indentUnit;
 	          state.soyState.push("literal");
 	          return "keyword";
 	        } else if (match = stream.match(/^\{([\/@\\]?[\w?]*)/)) {
 	          if (match[1] != "/switch")
-	            state.indent += (/^(\/|(else|elseif|case|default)$)/.test(match[1]) && state.tag != "switch" ? 1 : 2) * config.indentUnit;
+	            state.indent += (/^(\/|(else|elseif|ifempty|case|default)$)/.test(match[1]) && state.tag != "switch" ? 1 : 2) * config.indentUnit;
 	          state.tag = match[1];
 	          if (state.tag == "/" + last(state.kindTag)) {
 	            // We found the tag that opened the current kind="".
@@ -59408,6 +59524,22 @@
 	            state.localState = CodeMirror.startState(state.localMode);
 	          }
 	          state.soyState.push("tag");
+	          if (state.tag == "template" || state.tag == "deltemplate") {
+	            state.soyState.push("templ-def");
+	          }
+	          if (state.tag == "call" || state.tag == "delcall") {
+	            state.soyState.push("templ-ref");
+	          }
+	          if (state.tag == "let") {
+	            state.soyState.push("var-def");
+	          }
+	          if (state.tag == "for" || state.tag == "foreach") {
+	            state.scopes = prepend(state.scopes, state.variables);
+	            state.soyState.push("var-def");
+	          }
+	          if (state.tag.match(/^@param\??/)) {
+	            state.soyState.push("param-def");
+	          }
 	          return "keyword";
 	        }
 
@@ -91626,12 +91758,8 @@
 
 	'use strict';
 
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
+	exports.__esModule = true;
 	exports.default = undefined;
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _class, _temp;
 
@@ -91655,24 +91783,20 @@
 	  function ThemeProvider() {
 	    _classCallCheck(this, ThemeProvider);
 
-	    return _possibleConstructorReturn(this, Object.getPrototypeOf(ThemeProvider).apply(this, arguments));
+	    return _possibleConstructorReturn(this, _Component.apply(this, arguments));
 	  }
 
-	  _createClass(ThemeProvider, [{
-	    key: 'getChildContext',
-	    value: function getChildContext() {
-	      return {
-	        themr: {
-	          theme: this.props.theme
-	        }
-	      };
-	    }
-	  }, {
-	    key: 'render',
-	    value: function render() {
-	      return _react.Children.only(this.props.children);
-	    }
-	  }]);
+	  ThemeProvider.prototype.getChildContext = function getChildContext() {
+	    return {
+	      themr: {
+	        theme: this.props.theme
+	      }
+	    };
+	  };
+
+	  ThemeProvider.prototype.render = function render() {
+	    return _react.Children.only(this.props.children);
+	  };
 
 	  return ThemeProvider;
 	}(_react.Component), _class.propTypes = {
@@ -91691,15 +91815,11 @@
 
 	'use strict';
 
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
+	exports.__esModule = true;
 
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	exports.themeable = themeable;
 
@@ -91714,8 +91834,6 @@
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	function _objectWithoutProperties(obj, keys) { var target = {}; for (var i in obj) { if (keys.indexOf(i) >= 0) continue; if (!Object.prototype.hasOwnProperty.call(obj, i)) continue; target[i] = obj[i]; } return target; }
-
-	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -91753,14 +91871,13 @@
 	 */
 
 	exports.default = function (componentName, localTheme) {
-	  var options = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+	  var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
 	  return function (ThemedComponent) {
 	    var _class, _temp;
 
-	    var _DEFAULT_OPTIONS$opti = _extends({}, DEFAULT_OPTIONS, options);
-
-	    var optionComposeTheme = _DEFAULT_OPTIONS$opti.composeTheme;
-	    var optionWithRef = _DEFAULT_OPTIONS$opti.withRef;
+	    var _DEFAULT_OPTIONS$opti = _extends({}, DEFAULT_OPTIONS, options),
+	        optionComposeTheme = _DEFAULT_OPTIONS$opti.composeTheme,
+	        optionWithRef = _DEFAULT_OPTIONS$opti.withRef;
 
 	    validateComposeOption(optionComposeTheme);
 
@@ -91782,99 +91899,89 @@
 	      _inherits(Themed, _Component);
 
 	      function Themed() {
-	        var _Object$getPrototypeO;
-
 	        _classCallCheck(this, Themed);
 
 	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
 	          args[_key] = arguments[_key];
 	        }
 
-	        var _this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(Themed)).call.apply(_Object$getPrototypeO, [this].concat(args)));
+	        var _this = _possibleConstructorReturn(this, _Component.call.apply(_Component, [this].concat(args)));
 
 	        _this.theme_ = _this.calcTheme(_this.props);
 	        return _this;
 	      }
 
-	      _createClass(Themed, [{
-	        key: 'getWrappedInstance',
-	        value: function getWrappedInstance() {
-	          (0, _invariant2.default)(optionWithRef, 'To access the wrapped instance, you need to specify ' + '{ withRef: true } as the third argument of the themr() call.');
+	      Themed.prototype.getWrappedInstance = function getWrappedInstance() {
+	        (0, _invariant2.default)(optionWithRef, 'To access the wrapped instance, you need to specify ' + '{ withRef: true } as the third argument of the themr() call.');
 
-	          return this.refs.wrappedInstance;
-	        }
-	      }, {
-	        key: 'getNamespacedTheme',
-	        value: function getNamespacedTheme(props) {
-	          var themeNamespace = props.themeNamespace;
-	          var theme = props.theme;
+	        return this.refs.wrappedInstance;
+	      };
 
-	          if (!themeNamespace) return theme;
-	          if (themeNamespace && !theme) throw new Error('Invalid themeNamespace use in react-css-themr. ' + 'themeNamespace prop should be used only with theme prop.');
+	      Themed.prototype.getNamespacedTheme = function getNamespacedTheme(props) {
+	        var themeNamespace = props.themeNamespace,
+	            theme = props.theme;
 
-	          return Object.keys(theme).filter(function (key) {
-	            return key.startsWith(themeNamespace);
-	          }).reduce(function (result, key) {
-	            return _extends({}, result, _defineProperty({}, removeNamespace(key, themeNamespace), theme[key]));
-	          }, {});
-	        }
-	      }, {
-	        key: 'getThemeNotComposed',
-	        value: function getThemeNotComposed(props) {
-	          if (props.theme) return this.getNamespacedTheme(props);
-	          if (config.localTheme) return config.localTheme;
-	          return this.getContextTheme();
-	        }
-	      }, {
-	        key: 'getContextTheme',
-	        value: function getContextTheme() {
-	          return this.context.themr ? this.context.themr.theme[config.componentName] : {};
-	        }
-	      }, {
-	        key: 'getTheme',
-	        value: function getTheme(props) {
-	          return props.composeTheme === COMPOSE_SOFTLY ? _extends({}, this.getContextTheme(), config.localTheme, this.getNamespacedTheme(props)) : themeable(themeable(this.getContextTheme(), config.localTheme), this.getNamespacedTheme(props));
-	        }
-	      }, {
-	        key: 'calcTheme',
-	        value: function calcTheme(props) {
-	          var composeTheme = props.composeTheme;
+	        if (!themeNamespace) return theme;
+	        if (themeNamespace && !theme) throw new Error('Invalid themeNamespace use in react-css-themr. ' + 'themeNamespace prop should be used only with theme prop.');
 
-	          return composeTheme ? this.getTheme(props) : this.getThemeNotComposed(props);
-	        }
-	      }, {
-	        key: 'componentWillReceiveProps',
-	        value: function componentWillReceiveProps(nextProps) {
-	          if (nextProps.composeTheme !== this.props.composeTheme || nextProps.theme !== this.props.theme || nextProps.themeNamespace !== this.props.themeNamespace) {
-	            this.theme_ = this.calcTheme(nextProps);
-	          }
-	        }
-	      }, {
-	        key: 'render',
-	        value: function render() {
-	          var renderedElement = void 0;
-	          //exclude themr-only props
-	          //noinspection JSUnusedLocalSymbols
-	          var _props = this.props;
-	          var composeTheme = _props.composeTheme;
-	          var themeNamespace = _props.themeNamespace;
+	        return Object.keys(theme).filter(function (key) {
+	          return key.startsWith(themeNamespace);
+	        }).reduce(function (result, key) {
+	          var _extends2;
 
-	          var props = _objectWithoutProperties(_props, ['composeTheme', 'themeNamespace']); //eslint-disable-line no-unused-vars
+	          return _extends({}, result, (_extends2 = {}, _extends2[removeNamespace(key, themeNamespace)] = theme[key], _extends2));
+	        }, {});
+	      };
 
-	          if (optionWithRef) {
-	            renderedElement = _react2.default.createElement(ThemedComponent, _extends({}, props, {
-	              ref: 'wrappedInstance',
-	              theme: this.theme_
-	            }));
-	          } else {
-	            renderedElement = _react2.default.createElement(ThemedComponent, _extends({}, props, {
-	              theme: this.theme_
-	            }));
-	          }
+	      Themed.prototype.getThemeNotComposed = function getThemeNotComposed(props) {
+	        if (props.theme) return this.getNamespacedTheme(props);
+	        if (config.localTheme) return config.localTheme;
+	        return this.getContextTheme();
+	      };
 
-	          return renderedElement;
+	      Themed.prototype.getContextTheme = function getContextTheme() {
+	        return this.context.themr ? this.context.themr.theme[config.componentName] : {};
+	      };
+
+	      Themed.prototype.getTheme = function getTheme(props) {
+	        return props.composeTheme === COMPOSE_SOFTLY ? _extends({}, this.getContextTheme(), config.localTheme, this.getNamespacedTheme(props)) : themeable(themeable(this.getContextTheme(), config.localTheme), this.getNamespacedTheme(props));
+	      };
+
+	      Themed.prototype.calcTheme = function calcTheme(props) {
+	        var composeTheme = props.composeTheme;
+
+	        return composeTheme ? this.getTheme(props) : this.getThemeNotComposed(props);
+	      };
+
+	      Themed.prototype.componentWillReceiveProps = function componentWillReceiveProps(nextProps) {
+	        if (nextProps.composeTheme !== this.props.composeTheme || nextProps.theme !== this.props.theme || nextProps.themeNamespace !== this.props.themeNamespace) {
+	          this.theme_ = this.calcTheme(nextProps);
 	        }
-	      }]);
+	      };
+
+	      Themed.prototype.render = function render() {
+	        var renderedElement = void 0;
+	        //exclude themr-only props
+	        //noinspection JSUnusedLocalSymbols
+
+	        var _props = this.props,
+	            composeTheme = _props.composeTheme,
+	            themeNamespace = _props.themeNamespace,
+	            props = _objectWithoutProperties(_props, ['composeTheme', 'themeNamespace']); //eslint-disable-line no-unused-vars
+
+	        if (optionWithRef) {
+	          renderedElement = _react2.default.createElement(ThemedComponent, _extends({}, props, {
+	            ref: 'wrappedInstance',
+	            theme: this.theme_
+	          }));
+	        } else {
+	          renderedElement = _react2.default.createElement(ThemedComponent, _extends({}, props, {
+	            theme: this.theme_
+	          }));
+	        }
+
+	        return renderedElement;
+	      };
 
 	      return Themed;
 	    }(_react.Component), _class.displayName = 'Themed' + ThemedComponent.name, _class.contextTypes = {
@@ -91903,7 +92010,7 @@
 
 
 	function themeable() {
-	  var original = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+	  var original = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 	  var mixin = arguments[1];
 
 	  //don't merge if no mixin is passed
@@ -91914,6 +92021,8 @@
 
 	  //merging reducer
 	  function (result, key) {
+	    var _extends3;
+
 	    var originalValue = original[key];
 	    var mixinValue = mixin[key];
 
@@ -91928,7 +92037,7 @@
 	      newValue = originalValue ? originalValue + ' ' + mixinValue : mixinValue;
 	    }
 
-	    return _extends({}, result, _defineProperty({}, key, newValue));
+	    return _extends({}, result, (_extends3 = {}, _extends3[key] = newValue, _extends3));
 	  },
 
 	  //use original theme as an acc
@@ -91964,9 +92073,7 @@
 
 	'use strict';
 
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
+	exports.__esModule = true;
 
 	var _ThemeProvider = __webpack_require__(988);
 
@@ -92000,9 +92107,7 @@
 
 	'use strict';
 
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
+	exports.__esModule = true;
 
 	var _react = __webpack_require__(1);
 

@@ -4,6 +4,7 @@ require('../styles/main.css');
 import main from '../styles/main.css';
 import React from 'react';
 import { default as dom } from 'react-dom';
+var SerialPort = require("browser-serialport").SerialPort;
 
 /* flux */
 import AppStore from './stores/appStore.js';
@@ -102,6 +103,10 @@ export default class App extends React.Component {
   onDownloadFW() {
     Log.clear();
 
+    if (this.state.serialPort) {
+      this.state.serialPort.close();
+    }
+
     global.port.postMessage({
       type: 'download',
       filePath: this.state.filePathValue,
@@ -111,33 +116,36 @@ export default class App extends React.Component {
 
   onScreenLog() {
     Log.clear();
+
+    if (this.state.serialPort) {
+      this.state.serialPort.close();
+    }
+
     let _this = this;
     if (!global.serialPortConectionId) {
-      var SerialPort = require("browser-serialport").SerialPort
-      var serialPort = new SerialPort(_this.state.serialPortsValue, {
+      let serialPort = new SerialPort(_this.state.serialPortsValue, {
         baudrate: Number(_this.state.baudrateValue),
       });
+
       serialPort.on("open", function () {
         console.log('open');
+
+        _this.setState({
+          serialPort: serialPort,
+        });
+
         serialPort.on('data', function(data) {
           Log.parseSerialPorts(data);
-          // console.log('data received: ' + data);
         });
+
+        serialPort.on('close', function() {
+          _this.setState({
+            serialPort: null,
+          });
+        });
+
       });
     }
-    // } else {
-    //   console.log(chrome.serial)
-    //   chrome.serial.getConnections(function(list) {
-    //     console.log(list[0].connectionId);
-    //     chrome.serial.onReceive.addListener(function(info) {
-    //       if (info.connectionId === global.serialPortConectionId) {
-    //         Log.parseSerialPorts(info.data);
-    //       }
-    //     });
-    //   });
-    //   // chrome.serial.close(global.serialPortConectionId);
-    //   global.serialPortConectionId = null;
-    // }
   }
 
   _onChange() {
