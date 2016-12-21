@@ -42,7 +42,7 @@ function messageHandler(msg, push, done) {
         case 'download':
             var bootLoaderPath = './new_uploader/da.bin';
             if (process.platform === 'win32') {
-                build = child.exec('./build.sh', {cwd: '/Users/blue-mtk/mtk/test_ml'});
+                build = child.exec('./upload.exe -c' + msg.serialPortsValue + ' -f ' + msg.filePath + ' -t cm4', {cwd: './new_uploader'});
             } else {
                 build = child.exec('python ./new_uploader/upload.py -c ' + msg.serialPortsValue + ' -f ' + msg.filePath + ' -t cm4');
             }
