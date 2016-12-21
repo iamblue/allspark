@@ -74,64 +74,7 @@ function messageHandler(msg, push, done) {
                 done();
             });
             break;
-        case 'screen':
-            push({ log: 'screen -x ' + msg.serialPortsValue + ' 115200' });
-
-            build = child.spawn('screen', [msg.serialPortsValue, '115200']);
-            build.stdout.on('data', function(data) {
-                push({ Bufferlog: data });
-            });
-
-            build.stderr.on('data', function(data) {
-                push({ Bufferlog: data });
-            });
-            build.on('exit', function() {
-                push({ log: 'exit' });
-                done();
-            });
-            break;
         default:
             break;
     }
-    // if (msg.readdir) {
-    //     var build;
-    //     if (process.platform === 'win32') {
-    //         build = child.exec('./build.sh', {cwd: '/Users/blue-mtk/mtk/test_ml'});
-    //     } else {
-    //         build = child.exec('sh ./t.sh', {cwd: '/Users/blue-mtk/mtk/allspark/host'});
-    //     }
-    //     // child.unref();
-    //     build.stdout.on('data', function(data) {
-    //         push({ okfile: data });
-    //     });
-
-    //     build.stderr.on('data', function(data) {
-    //         push({ errfile: data });
-    //     });
-    //     build.on('exit', function() {
-    //         push({ file: 'exit' });
-    //         done();
-    //     });
-    //     // fs.readdir(msg.readdir, function(err, files) {
-    //     //     if (err) {
-    //     //         push({ error: err.message || err });
-    //     //     } else {
-    //     //         files.forEach(function(file) {
-    //     //             push({ file: file });
-    //     //         });
-    //     //     }
-    //     // });
-    // } else if (msg.subscribe) {
-    //     subscriptions[msg.subscribe] = true;
-    //     push({ subscribed: msg.subscribe });
-    //     done();
-    // } else if (msg.unsubscribe) {
-    //     delete subscriptions[msg.unsubscribe];
-    //     push({ unsubscribed: msg.unsubscribe });
-    //     done();
-    // } else {
-    //     // Just echo the message:
-    //     push(msg);
-    //     done();
-    // }
 }
