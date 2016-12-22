@@ -40,12 +40,10 @@ function getFilesizeInBytes(filename) {
 
 function messageHandler(msg, push, done) {
     // console.log(msg.filePath);
-    push({log: msg.filePath});
-    push({log: '123' + msg.file});
     switch (msg.type) {
         case 'download':
             //var filePath = 'C:\\msys64\\home\\allspark\\host\\new_uploader\\sample.bin';
-            var filePath = msg.filePath;
+            var filePath = msg.file;
 
             path.exists(filePath, function(exists) {
                 if (exists) {
@@ -53,10 +51,10 @@ function messageHandler(msg, push, done) {
 
                     if (process.platform === 'win32') {
                         bootLoaderPath = __dirname + '\\new_uploader\\da.bin';
-                        build = child.exec('upload.exe -c ' + msg.serialPortsValue + ' -f ' + filePath + ' -t cm4', { cwd: __dirname + '\\new_uploader' });
+                        build = child.exec('upload.exe -c ' + msg.serial + ' -f ' + filePath + ' -t cm4', { cwd: __dirname + '\\new_uploader' });
                     } else {
                         bootLoaderPath = './new_uploader/da.bin';
-                        build = child.exec('python ./new_uploader/upload.py -c ' + msg.serialPortsValue + ' -f ' + filePath + ' -t cm4');
+                        build = child.exec('python ./new_uploader/upload.py -c ' + msg.serial + ' -f ' + filePath + ' -t cm4');
                     }
 
                     var binFileSize = getFilesizeInBytes(filePath);
