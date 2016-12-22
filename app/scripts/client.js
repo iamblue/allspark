@@ -238,6 +238,7 @@ export default class App extends React.Component {
             <li>打開 Terminal.app , 進去這個資料夾</li>
             <li>在 Terminal 輸入 ./register.sh </li>
           </ul>
+          <p>以上完成後，請重新啟動 Allspark.</p>
         </DialogBody>
         <DialogFooter>
           <Button onClick={this.closeConnectWithComputerDialog} kind="primary">

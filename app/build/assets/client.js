@@ -39560,6 +39560,11 @@
 	              null,
 	              '在 Terminal 輸入 ./register.sh '
 	            )
+	          ),
+	          _react2['default'].createElement(
+	            'p',
+	            null,
+	            '以上完成後，請重新啟動 Allspark.'
 	          )
 	        ),
 	        _react2['default'].createElement(
