@@ -39403,7 +39403,7 @@
 	      }
 
 	      try {
-	        _libPortJs2['default'].connect();
+	        // Port.connect();
 	        global.port.postMessage({
 	          type: 'download',
 	          filePath: this.state.filePathValue,
@@ -39414,7 +39414,6 @@
 	        _dispatcherAppDispatcherJs2['default'].dispatch({
 	          log: this.state.log + '\n Cannot connect to your computer!'
 	        });
-	        _libPortJs2['default'].connect();
 	        return this.setState({
 	          connectWithComputerDialogShow: true
 	        });

@@ -143,7 +143,7 @@ export default class App extends React.Component {
     }
 
     try {
-      Port.connect();
+      // Port.connect();
       global.port.postMessage({
         type: 'download',
         filePath: this.state.filePathValue,
@@ -154,7 +154,6 @@ export default class App extends React.Component {
       AppDispatcher.dispatch({
         log: this.state.log + '\n Cannot connect to your computer!',
       });
-      Port.connect();
       return this.setState({
         connectWithComputerDialogShow: true,
       });
