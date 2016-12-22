@@ -39402,11 +39402,14 @@
 	        global.serialPort.close();
 	      }
 
+	      console.log(this.state.filePathValue);
+
 	      try {
 	        // Port.connect();
 	        global.port.postMessage({
 	          type: 'download',
 	          filePath: this.state.filePathValue,
+	          file: this.state.filePathValue,
 	          serialPortsValue: this.state.serialPortsValue
 	        });
 	      } catch (e) {

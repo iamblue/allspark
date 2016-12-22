@@ -39,6 +39,9 @@ function getFilesizeInBytes(filename) {
 }
 
 function messageHandler(msg, push, done) {
+    // console.log(msg.filePath);
+    push({log: msg.filePath});
+    push({log: '123' + msg.file});
     switch (msg.type) {
         case 'download':
             //var filePath = 'C:\\msys64\\home\\allspark\\host\\new_uploader\\sample.bin';
