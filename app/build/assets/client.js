@@ -39403,6 +39403,7 @@
 	      }
 
 	      try {
+	        _libPortJs2['default'].connect();
 	        global.port.postMessage({
 	          type: 'download',
 	          filePath: this.state.filePathValue,
@@ -39572,6 +39573,7 @@
 	          )
 	        )
 	      );
+
 	      var settingDialog = _react2['default'].createElement(
 	        _mtkUiLibDialog2['default'],
 	        {
@@ -39652,6 +39654,7 @@
 	          )
 	        )
 	      );
+
 	      return _react2['default'].createElement(
 	        'div',
 	        { style: { width: 954, margin: '0 auto', padding: '20px 0' } },
