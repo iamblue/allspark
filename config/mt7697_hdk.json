@@ -1,4 +1,0 @@
-{
-  "name": "mt7697_hdk",
-  "target": ["cm4", "ldr", "n9"]
-}
