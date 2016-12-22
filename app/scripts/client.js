@@ -66,7 +66,7 @@ const baudrates = [
     value: '9600',
     children: '9600',
   },
-]
+];
 
 export default class App extends React.Component {
 
@@ -247,6 +247,7 @@ export default class App extends React.Component {
         </DialogFooter>
       </Dialog>
     );
+
     let settingDialog = (
       <Dialog
         show={this.state.settingDialogShow}
@@ -305,6 +306,7 @@ export default class App extends React.Component {
         </DialogFooter>
       </Dialog>
     );
+
     return (
       <div style={{ width: 954, margin: '0 auto', padding: '20px 0' }}>
         {settingDialog}
