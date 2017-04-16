@@ -1,6 +1,6 @@
 {
   "name": "allspark",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "The best dev tools for IoT device",
   "main": "index.js",
   "scripts": {
