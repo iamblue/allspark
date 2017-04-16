@@ -49,10 +49,10 @@ function messageHandler(msg, push, done) {
 
                 if (process.platform === 'win32') {
                     bootLoaderPath = __dirname + '\\new_uploader\\da.bin';
-                    build = child.exec('upload.exe -c ' + msg.serial + ' -f ' + filePath + ' -t cm4', { cwd: __dirname + '\\new_uploader' });
+                    build = child.exec('upload.exe -c ' + msg.serial + ' -f ' + filePath + ' -t cm4 -p mt7697', { cwd: __dirname + '\\new_uploader' });
                 } else {
-                    bootLoaderPath = './new_uploader/da.bin';
-                    build = child.exec('python ./new_uploader/upload.py -c ' + msg.serial + ' -f ' + filePath + ' -t cm4');
+                    bootLoaderPath = './new_uploader_new/da97.bin';
+                    build = child.exec('python ./upload.py -c ' + msg.serial + ' -f ' + filePath + ' -t cm4 -p mt7697', { cwd: __dirname + '/new_uploader_new'});
                 }
 
                 var binFileSize = getFilesizeInBytes(filePath);
@@ -66,7 +66,7 @@ function messageHandler(msg, push, done) {
                 build.stderr.on('data', function(data) {
                     if (/^progess/.test(data)) {
                         var value = Number(data.replace(/[^0-9]/g, ''));
-                        var total = fileSize / 128;
+                        var total = fileSize / 1024;
                         push({ progress: (value / total) * 100 });
                     } else {
                         if (/^Start uploading the download agent/.test(data)) {

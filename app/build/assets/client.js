@@ -39401,7 +39401,6 @@
 	      if (global.serialPort) {
 	        global.serialPort.close();
 	      }
-
 	      try {
 	        // Port.connect();
 	        global.port.postMessage({
@@ -39435,7 +39434,7 @@
 	      });
 
 	      serialPort.on('open', function () {
-	        console.log('open');
+	        // console.log('open');
 	        global.serialPort = serialPort;
 
 	        serialPort.on('data', function (data) {

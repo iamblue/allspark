@@ -141,7 +141,6 @@ export default class App extends React.Component {
     if (global.serialPort) {
       global.serialPort.close();
     }
-
     try {
       // Port.connect();
       global.port.postMessage({
@@ -174,7 +173,7 @@ export default class App extends React.Component {
     });
 
     serialPort.on('open', function () {
-      console.log('open');
+      // console.log('open');
       global.serialPort = serialPort;
 
       serialPort.on('data', function(data) {
